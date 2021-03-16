@@ -4,6 +4,9 @@ import bcrypt from 'bcryptjs';
 
 import User, { IUser } from '../models/user.model';
 import Board from '../models/board.model';
+import Checklist from '../models/checklist.model';
+import Card from '../models/card.model';
+import List from '../models/list.model';
 import HTTPException from '../models/exception.model';
 import { getToken, EMiddleware, SBody } from '../util';
 
@@ -18,6 +21,7 @@ export const signupUser: EMiddleware = async (req, res, next) => {
     const { username, password }: SBody = req.body;
     try {
         const existingUser: IUser | null = await User.findOne({ username });
+        // verify uniqueness of user
         if (existingUser) {
             next(HTTPException.rUnprocessable('user already exists in system'));
         } else {
@@ -59,10 +63,12 @@ export const loginUser: EMiddleware = async (req, res, next) => {
     const { username, password }: SBody = req.body;
     try {
         const foundUser: IUser | null = await User.findOne({ username });
+        // verify user exists
         if (!foundUser) {
             next(HTTPException.rAuth());
         } else {
             const pwdValid: boolean = await bcrypt.compare(password, foundUser.password);
+            // verify correctness of password
             if (!pwdValid) {
                 next(HTTPException.rAuth());
             } else {
@@ -93,23 +99,19 @@ export const deleteUser: EMiddleware = async (req, res, next) => {
             // start transaction and attempt to save changes
             const session: ClientSession = await startSession();
             session.startTransaction();
-
-            await foundUser.remove( { session } );
+            // remove all checklists tied to the user
+            await Checklist.deleteMany({ indirectOwner: foundUser._id }, { session });
+            // remove all cards tied to the user
+            await Card.deleteMany({ indirectOwner: foundUser._id }, { session });
+            // remove all lists tied to the user
+            await List.deleteMany({ indirectOwner: foundUser._id }, { session });
+            // remove all boards tied to the user
             await Board.deleteMany({ owner: foundUser._id }, { session });
-
-            // TODO remove lists
-            //await List.deleteMany({ indirectOwner: foundUser._id });
-
-            // TODO remove cards
-            //await Card.deleteMany({ indirectOwner: foundUser._id });
-
-            // TODO remove checklists
-            //await CheckList.deleteMany({ indirectOwner: foundUser._id });
-
-            // TODO commit changes
+            // finally remove the user itself
+            await foundUser.remove( { session } );
+            // commit all changes
             await session.commitTransaction();
-
-            // return the deleted user with a 200 response
+            // return deleted username with 200 response
             res.status(200).json({message: `user ${foundUser.username} successfully deleted`});
         }
     } catch(err) {
