@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+      "module": "CommonJS",
+      "strict": true,
+      "baseUrl": ".",
+      "outDir": "build",
+      "removeComments": true,
+      "target": "ES6",
+      "moduleResolution": "Node",
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "types": ["./src/typings"]
+    },
+    "include": ["./src/**/*.ts"]
+} 

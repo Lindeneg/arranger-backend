@@ -1,0 +1,38 @@
+{
+  "name": "arranger-backend",
+  "version": "1.0.0",
+  "main": "./build/server.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "prod": "yarn build && node ./build/server.js",
+    "dev": "NODE_ENV=development nodemon ./src/server.ts",
+    "start": "npm ./build/server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.19.0",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "express-validator": "^6.10.0",
+    "jsonwebtoken": "^8.5.1",
+    "mongodb": "^3.6.4",
+    "mongoose": "^5.12.0",
+    "mongoose-unique-validator": "^2.0.3"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.2",
+    "@types/body-parser": "^1.19.0",
+    "@types/dotenv": "^8.2.0",
+    "@types/express": "^4.17.11",
+    "@types/express-validator": "^3.0.0",
+    "@types/jsonwebtoken": "^8.5.0",
+    "@types/mongoose": "^5.10.3",
+    "@types/mongoose-unique-validator": "^1.0.4",
+    "@types/node": "^14.14.34",
+    "@types/nodemon": "^1.19.0",
+    "nodemon": "^2.0.7",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.2.3"
+  }
+}
