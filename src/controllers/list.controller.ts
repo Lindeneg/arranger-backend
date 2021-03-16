@@ -7,6 +7,9 @@ import HTTPException from '../models/exception.model';
 import { EMiddleware, SBody, ModelName, CollectionName, cmp } from '../util';
 
 
+// TODO https://stackoverflow.com/questions/19222520/populate-nested-array-in-mongoose
+
+
 export const createList: EMiddleware = async (req, res, next) => {
     const errors: Result<ValidationError> = validationResult(req);
 

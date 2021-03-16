@@ -10,13 +10,12 @@ import { getToken, EMiddleware, SBody } from '../util';
 
 export const signupUser: EMiddleware = async (req, res, next) => {
     const errors: Result<ValidationError> = validationResult(req);
-
+    // verify request body
     if (!errors.isEmpty()) {
         return next(HTTPException.rMalformed(errors));
     }
-    
+    // extract request data from body
     const { username, password }: SBody = req.body;
-
     try {
         const existingUser: IUser | null = await User.findOne({ username });
         if (existingUser) {
@@ -33,6 +32,7 @@ export const signupUser: EMiddleware = async (req, res, next) => {
                 lastLogin: ts
             });
             await newUser.save();
+            // generate jwt token
             const token: string | null = getToken({ userId: newUser._id });
             if (token) {
                 res.status(201).json({
@@ -51,13 +51,12 @@ export const signupUser: EMiddleware = async (req, res, next) => {
 
 export const loginUser: EMiddleware = async (req, res, next) => {
     const errors: Result<ValidationError> = validationResult(req);
-
+    // verify request body
     if (!errors.isEmpty()) {    
         return next(HTTPException.rMalformed(errors));
     }
-
+    // extract request data from body
     const { username, password }: SBody = req.body;
-
     try {
         const foundUser: IUser | null = await User.findOne({ username });
         if (!foundUser) {
@@ -91,14 +90,12 @@ export const deleteUser: EMiddleware = async (req, res, next) => {
         if (!foundUser) {
             next(HTTPException.rAuth());
         } else {
-            // make all deletions in the same sessions, so if any error occurs
-            // we can roll back to the state before the deletion commenced.
-
+            // start transaction and attempt to save changes
             const session: ClientSession = await startSession();
             session.startTransaction();
 
-            await foundUser.remove();
-            await Board.deleteMany({ owner: foundUser._id });
+            await foundUser.remove( { session } );
+            await Board.deleteMany({ owner: foundUser._id }, { session });
 
             // TODO remove lists
             //await List.deleteMany({ indirectOwner: foundUser._id });
