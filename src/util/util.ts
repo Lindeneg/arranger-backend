@@ -3,6 +3,7 @@ import { isDebug } from './constants';
 import { TokenData } from './types';
 
 
+// create a new jwt token
 export const getToken = (pl: string | object): string | null => {
     if (typeof process.env.JWT_PRIVATE_TOKEN !== 'undefined') {
         return jwt.sign(pl, process.env.JWT_PRIVATE_TOKEN, {expiresIn: '1h'});
@@ -10,7 +11,7 @@ export const getToken = (pl: string | object): string | null => {
     return null;
 };
 
-
+// verify a jwt token and return the decoded content
 export const verifyToken = (token: string): TokenData | null => {
     try {
         if (typeof process.env.JWT_PRIVATE_TOKEN !== 'undefined') {
@@ -27,6 +28,7 @@ export const verifyToken = (token: string): TokenData | null => {
     return null;
 };
 
+// compare userId found in jwt payload with the target string
 export const cmp = (tokenData: TokenData | undefined, target: string | any): boolean => {
     if (typeof tokenData !== 'undefined' && typeof tokenData.userId !== 'undefined' && typeof target !== 'undefined') {
         try {
@@ -36,4 +38,4 @@ export const cmp = (tokenData: TokenData | undefined, target: string | any): boo
         }
     }
     return false;
-}
+};
