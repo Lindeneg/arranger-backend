@@ -13,36 +13,34 @@ export interface IndirectRelation<T extends BaseDoc> {
     indirectOwner: T['_id'];
 };
 
-export enum ModelName {
-    User      = 'User',
-    Board     = 'Board',
-    List      = 'List',
-    Card      = 'Card',
-    CheckList = 'CheckList'
+export interface ErrorResponseContent {
+    message      : string;
+    dev         ?: DevError;
 };
 
-export enum CollectionName {
-    User      = 'users',
-    Board     = 'boards',
-    List      = 'lists',
-    Card      = 'cards',
-    CheckList = 'checklists',
-};
-
-export interface SBody {
-    [key: string]: string
+export interface SBody <T = string> {
+    [key: string]: T;
 };
 
 export interface TokenData {
-    userId: string
+    userId       : string;
 };
 
-export type DevError = string | Result<ValidationError>;
+export enum ModelName {
+    User                = 'User',
+    Board               = 'Board',
+    List                = 'List',
+    Card                = 'Card',
+    Checklist           = 'Checklist'
+};
 
+export enum CollectionName {
+    User                = 'users',
+    Board               = 'boards',
+    List                = 'lists',
+    Card                = 'cards',
+    Checklist           = 'checklists',
+};
+
+export type DevError    = string | Result<ValidationError>;
 export type EMiddleware = (req: Request, res: Response, next: NextFunction) => void;
-
-export interface ErrorResponseContent {
-    message: string,
-    dev   ?: DevError
-};
-
