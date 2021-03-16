@@ -5,7 +5,8 @@ export const RULE = {
     PW_MAX_LEN: 32,
     USR_MIN_LEN: 4,
     USR_MAX_LEN: 16,
-    DEFAULT_MAX_LEN: 32
+    DEFAULT_MAX_LEN: 32,
+    DES_MAX_LEN: 128
 };
 
 export const requiredEnvVars: string[] = [
