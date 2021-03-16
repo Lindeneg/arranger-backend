@@ -90,6 +90,7 @@ export const loginUser: EMiddleware = async (req, res, next) => {
     }
 };
 
+
 export const deleteUser: EMiddleware = async (req, res, next) => {
     try {
         const foundUser: IUser | null = await User.findById(req.userData.userId);
@@ -119,6 +120,7 @@ export const deleteUser: EMiddleware = async (req, res, next) => {
     }
 };
 
+
 export const changeUserPassword: EMiddleware = async (req, res, next) => {
     // TODO
-}
+};

@@ -3,6 +3,7 @@ import { startSession, ClientSession } from 'mongoose';
 
 import Card, { ICard } from '../models/card.model';
 import List, { IList } from '../models/list.model';
+import Checklist from '../models/checklist.model';
 import HTTPException from '../models/exception.model';
 import { EMiddleware, SBody, ModelName, CollectionName, cmp } from '../util';
 
@@ -147,16 +148,15 @@ export const deleteCardByCardId: EMiddleware = async (req, res, next) => {
             // start transaction and attempt to make changes
             const session: ClientSession = await startSession();
             session.startTransaction();
-            // remove card from list
+            // remove checklists under card
+            await Checklist.deleteMany({ owner: foundCard._id }, { session });
+            // remove card from owning list
             await List.findByIdAndUpdate(foundCard.owner, { $pull: { [CollectionName.Card]: foundCard._id }, updatedOn }, { session });
-
-            // TODO remove all checklists under card
-
             // remove the card itself
             await foundCard.remove({ session });
             // commit changes
             await session.commitTransaction();
-            // return the deleted card with a 200 response
+            // return name of deleted card with a 200 response
             res.status(200).json({message: `card ${foundCard.name} successfully deleted`});
         } else {
             next(HTTPException.rAuth('incorrect token for desired action'));

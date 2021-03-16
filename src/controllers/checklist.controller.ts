@@ -123,7 +123,7 @@ export const updateChecklistByChecklistId: EMiddleware = async (req, res, next) 
             next(HTTPException.rNotFound('checklistId does not match any existing checklist'));
             // verify that the user has access to the checklist
         } else if (cmp(req.userData, foundChecklist.indirectOwner)) {
-            // perform the updates to the checklist
+            // perform updates to the checklist
             foundChecklist.name = name; foundChecklist.description = description; 
             foundChecklist.isCompleted = isCompleted; foundChecklist.updatedOn = updatedOn;
             await foundChecklist.save();
