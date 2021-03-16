@@ -10,7 +10,7 @@ export interface ICard extends BaseDoc, IndirectRelation<IUser> {
     description: string;
     color      : string;
     owner      : IList['_id'];
-    checkLists : Array<ICheckList['_id']>;
+    checklists : Array<ICheckList['_id']>;
 };
 
 const cardSchema: Schema = new Schema({
@@ -19,7 +19,7 @@ const cardSchema: Schema = new Schema({
     color        : { type: String,             required: true },
     owner        : { type: Types.ObjectId,     required: true, ref: ModelName.List },
     indirectOwner: { type: Types.ObjectId,     required: true, ref: ModelName.User },
-    checkLists   : { type: [ Types.ObjectId ], required: true, ref: ModelName.CheckList },
+    checklists   : { type: [ Types.ObjectId ], required: true, ref: ModelName.CheckList },
     createdOn    : { type: Number,             required: true },
     updatedOn    : { type: Number,             required: true },
 });
