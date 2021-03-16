@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { check } from 'express-validator';
 
-import { signupUser, loginUser, deleteUser } from '../controllers/user.controller';
+import { signupUser, loginUser, deleteUser, changeUserPassword } from '../controllers/user.controller';
 import { authCheck } from '../middleware/auth.middleware';
 import { RULE } from '../util';
 
@@ -29,6 +29,8 @@ router.post('/login',
 // all subsequent routes should utilize authentication
 router.use(authCheck);
 
+// update existing user password
+router.patch('/', changeUserPassword); 
 
 // delete existing user
 router.delete('/', deleteUser); 

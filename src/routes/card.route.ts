@@ -2,7 +2,12 @@ import { Router } from 'express';
 import { check } from 'express-validator';
 
 import { 
-} from '../controllers/list.controller';
+    createCard,
+    getCardsByListId,
+    getCardByCardId,
+    updateCardByCardId,
+    deleteCardByCardId
+} from '../controllers/card.controller';
 import { authCheck } from '../middleware/auth.middleware';
 import { RULE } from '../util';
 
@@ -20,31 +25,31 @@ router.post('/',
         check('name').isLength({        min: 1,  max: RULE.USR_MAX_LEN }),
         check('owner').not().isEmpty()
     ],
-    createList
+    createCard
 );
 
 // get all cards from list id
-router.get('/board/:boardId',
-    getListsByBoardId
+router.get('/list/:listId',
+    getCardsByListId
 );
 
 // get card from card id
-router.get('/:listId',
-    getListByListId
+router.get('/:cardId',
+    getCardByCardId
 );
 
 // update card from card id
-router.patch('/:listId',
+router.patch('/:cardId',
     [
         check('description').isLength({ min: 1,  max: RULE.DES_MAX_LEN }),
         check('color').isLength({       min: 1,  max: RULE.DEFAULT_MAX_LEN }),
         check('name').isLength({        min: 1,  max: RULE.USR_MAX_LEN })
     ],
-    updateListByListId
+    updateCardByCardId
 );
 
 // delete card from card id
-router.delete('/:listId', deleteListByListId);
+router.delete('/:cardId', deleteCardByCardId);
 
 
 export default router;
