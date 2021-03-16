@@ -119,3 +119,7 @@ export const deleteUser: EMiddleware = async (req, res, next) => {
         next(HTTPException.rInternal(err));
     }
 };
+
+export const changeUserPassword: EMiddleware = async (req, res, next) => {
+    // TODO
+}
