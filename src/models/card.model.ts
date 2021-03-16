@@ -1,16 +1,16 @@
 import { Schema, Types, model } from 'mongoose';
 
 import { IList } from './list.model';
-import { ICheckList } from './checklist.model';
+import { IChecklist } from './checklist.model';
 import { IUser } from './user.model';
 import { BaseDoc, IndirectRelation, ModelName } from '../util/types';
 
 
 export interface ICard extends BaseDoc, IndirectRelation<IUser> {
-    description: string;
-    color      : string;
-    owner      : IList['_id'];
-    checklists : Array<ICheckList['_id']>;
+    description  : string;
+    color        : string;
+    owner        : IList['_id'];
+    checklists   : Array<IChecklist['_id']>;
 };
 
 const cardSchema: Schema = new Schema({
@@ -19,7 +19,7 @@ const cardSchema: Schema = new Schema({
     color        : { type: String,             required: true },
     owner        : { type: Types.ObjectId,     required: true, ref: ModelName.List },
     indirectOwner: { type: Types.ObjectId,     required: true, ref: ModelName.User },
-    checklists   : { type: [ Types.ObjectId ], required: true, ref: ModelName.CheckList },
+    checklists   : { type: [ Types.ObjectId ], required: true, ref: ModelName.Checklist },
     createdOn    : { type: Number,             required: true },
     updatedOn    : { type: Number,             required: true },
 });

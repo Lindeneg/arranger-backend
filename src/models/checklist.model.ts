@@ -5,13 +5,13 @@ import { IUser } from './user.model';
 import { BaseDoc, IndirectRelation, ModelName } from '../util/types';
 
 
-export interface ICheckList extends BaseDoc, IndirectRelation<IUser> {
+export interface IChecklist extends BaseDoc, IndirectRelation<IUser> {
     description: string;
     isCompleted: boolean;
     owner      : ICard['_id'];
 };
 
-const checkListSchema: Schema = new Schema({
+const checklistSchema: Schema = new Schema({
     name         : { type: String,         required: true },
     description  : { type: String,         required: true },
     isCompleted  : { type: Boolean,        required: true },
@@ -22,4 +22,4 @@ const checkListSchema: Schema = new Schema({
 });
 
 
-export default model<ICheckList>(ModelName.CheckList, checkListSchema);
+export default model<IChecklist>(ModelName.Checklist, checklistSchema);
