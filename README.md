@@ -1,1 +1,1 @@
-*kanban-style board management*
+*in progress: kanban board management*

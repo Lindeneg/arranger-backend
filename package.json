@@ -1,13 +1,17 @@
 {
   "name": "arranger-backend",
+  "author": {
+    "name": "Christian Lindeneg",
+    "email": "hi@lindeneg.org",
+    "url": "https://github.com/lindeneg/arranger-backend"
+  },
   "version": "1.0.0",
   "main": "./build/server.js",
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "prod": "yarn build && node ./build/server.js",
-    "dev": "NODE_ENV=development nodemon ./src/server.ts",
-    "start": "npm ./build/server.js"
+    "dev": "NODE_ENV=development && nodemon ./src/server.ts",
+    "start": "NODE_ENV=production && node ./build/server.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
