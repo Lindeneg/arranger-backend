@@ -153,7 +153,7 @@ export const deleteListByListId: EMiddleware = async (req, res, next) => {
             const session: ClientSession = await startSession();
             session.startTransaction();
             // find all cards under the list
-            const foundCards: ICard[] | null = await Card.find( { owner: foundList._id }, { session });
+            const foundCards: ICard[] | null = await Card.find( { owner: foundList._id }, null, { session });
             // iterate over each found card
             foundCards.forEach(async (foundCard: ICard) => {
                 // delete all checklists under each card

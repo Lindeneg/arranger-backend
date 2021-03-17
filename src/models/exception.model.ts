@@ -1,4 +1,4 @@
-import { ErrorResponseContent, DevError, isDebug } from "../util";
+import { ErrorResponseContent, DevError } from "../util";
 
 
 export default class HTTPException extends Error {
@@ -15,7 +15,7 @@ export default class HTTPException extends Error {
 
     public toResponse(): ErrorResponseContent {
         const obj: ErrorResponseContent = {message: this.message};
-        if (isDebug) {
+        if (process.env.NODE_ENV === 'development') {
             obj.dev = this.error;
         }
         return obj;

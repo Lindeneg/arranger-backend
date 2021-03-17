@@ -10,8 +10,8 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "dev": "NODE_ENV=development && nodemon ./src/server.ts",
-    "start": "NODE_ENV=production && node ./build/server.js"
+    "dev": "NODE_ENV=development nodemon ./src/server.ts",
+    "start": "NODE_ENV=production node ./build/server.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

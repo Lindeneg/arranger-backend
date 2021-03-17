@@ -7,7 +7,7 @@ import List, { IList } from '../models/list.model';
 import Card, { ICard }  from '../models/card.model';
 import Checklist from '../models/checklist.model';
 import HTTPException from '../models/exception.model';
-import { EMiddleware, SBody, ModelName, CollectionName, cmp } from '../util';
+import { EMiddleware, SBody, ModelName, CollectionName, cmp, isDebug } from '../util';
 
 
 export const createBoard: EMiddleware = async (req, res, next) => {
@@ -145,23 +145,23 @@ export const deleteBoardByBoardId: EMiddleware = async (req, res, next) => {
             // start transaction and attempt to make changes
             const session: ClientSession = await startSession();
             session.startTransaction();
-            // remove board from user
-            await User.findByIdAndUpdate(req.userData.userId, { $pull: { [CollectionName.Board]: foundBoard._id }, updatedOn }, { session });
             // find all lists under the board
-            const foundLists: IList[] | null = await List.find({ owner: foundBoard._id }, { session });
+            const foundLists: IList[] | null = await List.find({ owner: foundBoard._id }, null, { session });
             // iterate over each found list
             foundLists.forEach(async (foundList: IList) => {
-                const foundCards: ICard[] | null = await Card.find({ owner: foundList._id },  { session });
+                const foundCards: ICard[] | null = await Card.find({ owner: foundList._id }, null, { session });
                 // iterate over each found card
                 foundCards.forEach(async (foundCard: ICard) => {
                     // remove all checklist associated with each card
-                    await Checklist.deleteMany({ owner: foundCard._id },  { session });
+                    await Checklist.deleteMany({ owner: foundCard._id }, { session });
                     // remove card itself
                     await foundCard.remove({ session });
                 });
-                // after cards and checklists are removed under a list, remove the list itself
+                // after cards and checklists are removed under a list, remove the list itself  
                 await foundList.remove({ session });
             });
+            // remove board from user
+            await User.findByIdAndUpdate(req.userData.userId, { $pull: { [CollectionName.Board]: foundBoard._id }, updatedOn }, { session });
             // remove the board itself
             await foundBoard.remove({ session });
             // commit changes
@@ -172,6 +172,7 @@ export const deleteBoardByBoardId: EMiddleware = async (req, res, next) => {
             next(HTTPException.rAuth('incorrect token for desired action'));
         }
     } catch(err) {
+        console.log(err)
         next(HTTPException.rInternal(err));
     }
 };
