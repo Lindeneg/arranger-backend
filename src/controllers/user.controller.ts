@@ -10,7 +10,6 @@ import List from '../models/list.model';
 import HTTPException from '../models/exception.model';
 import { getToken, EMiddleware, SBody } from '../util';
 
-
 export const signupUser: EMiddleware = async (req, res, next) => {
     const errors: Result<ValidationError> = validationResult(req);
     // verify request body
@@ -25,13 +24,13 @@ export const signupUser: EMiddleware = async (req, res, next) => {
         if (existingUser) {
             next(HTTPException.rUnprocessable('user already exists in system'));
         } else {
-            const ts     : number = new Date().getTime();
-            const pwd    : string = await bcrypt.hash(password, 12);
-            const newUser: IUser  = new User({  
-                username, 
-                password : pwd, 
-                boards   : [], 
-                createdOn: ts, 
+            const ts: number = new Date().getTime();
+            const pwd: string = await bcrypt.hash(password, 12);
+            const newUser: IUser = new User({
+                username,
+                password: pwd,
+                boards: [],
+                createdOn: ts,
                 updatedOn: ts,
                 lastLogin: ts
             });
@@ -47,16 +46,15 @@ export const signupUser: EMiddleware = async (req, res, next) => {
                 next(HTTPException.rInternal('jwt token could not be generated'));
             }
         }
-    } catch(err) {
+    } catch (err) {
         next(HTTPException.rInternal(err));
     }
 };
 
-
 export const loginUser: EMiddleware = async (req, res, next) => {
     const errors: Result<ValidationError> = validationResult(req);
     // verify request body
-    if (!errors.isEmpty()) {    
+    if (!errors.isEmpty()) {
         return next(HTTPException.rMalformed(errors));
     }
     // extract request data from body
@@ -85,11 +83,10 @@ export const loginUser: EMiddleware = async (req, res, next) => {
                 }
             }
         }
-    } catch(err) {
+    } catch (err) {
         next(HTTPException.rInternal(err));
     }
 };
-
 
 export const deleteUser: EMiddleware = async (req, res, next) => {
     try {
@@ -109,17 +106,16 @@ export const deleteUser: EMiddleware = async (req, res, next) => {
             // remove all boards tied to the user
             await Board.deleteMany({ owner: foundUser._id }, { session });
             // finally remove the user itself
-            await foundUser.remove( { session } );
+            await foundUser.remove({ session });
             // commit all changes
             await session.commitTransaction();
             // return deleted username with 200 response
-            res.status(200).json({message: `user ${foundUser.username} successfully deleted`});
+            res.status(200).json({ message: `user ${foundUser.username} successfully deleted` });
         }
-    } catch(err) {
+    } catch (err) {
         next(HTTPException.rInternal(err));
     }
 };
-
 
 export const changeUserPassword: EMiddleware = async (req, res, next) => {
     // TODO

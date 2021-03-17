@@ -1,12 +1,11 @@
 import jwt from 'jsonwebtoken';
-import { isDebug } from './constants';
-import { TokenData } from './types';
 
+import { TokenData } from './types';
 
 // create a new jwt token
 export const getToken = (pl: string | object): string | null => {
     if (typeof process.env.JWT_PRIVATE_TOKEN !== 'undefined') {
-        return jwt.sign(pl, process.env.JWT_PRIVATE_TOKEN, {expiresIn: '1h'});
+        return jwt.sign(pl, process.env.JWT_PRIVATE_TOKEN, { expiresIn: '1h' });
     }
     return null;
 };
@@ -19,11 +18,11 @@ export const verifyToken = (token: string): TokenData | null => {
             if (typeof result === 'object') {
                 return result;
             } else {
-                isDebug && console.log('unexpected token result: ' + result);
+                isDebug() && console.log('unexpected token result: ' + result);
             }
         }
-    } catch(err) {
-        isDebug && console.log(err);
+    } catch (err) {
+        isDebug() && console.log(err);
     }
     return null;
 };
@@ -33,9 +32,12 @@ export const cmp = (tokenData: TokenData | undefined, target: string | any): boo
     if (typeof tokenData !== 'undefined' && typeof tokenData.userId !== 'undefined' && typeof target !== 'undefined') {
         try {
             return tokenData.userId.toString() === target.toString();
-        } catch(err) {
-            isDebug && console.log(`could not compare ${tokenData} with ${target}`);
+        } catch (err) {
+            isDebug() && console.log(`could not compare ${tokenData} with ${target}`);
         }
     }
     return false;
 };
+
+// check if we're running in dev mode
+export const isDebug = (): boolean => process.env.NODE_ENV === 'development';

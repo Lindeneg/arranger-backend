@@ -1,5 +1,3 @@
-export const isDebug: boolean  = process.env.NODE_ENV === 'development';
-
 export const RULE = {
     PW_MIN_LEN: 8,
     PW_MAX_LEN: 32,

@@ -5,23 +5,24 @@ import { signupUser, loginUser, deleteUser, changeUserPassword } from '../contro
 import { authCheck } from '../middleware/auth.middleware';
 import { RULE } from '../util';
 
-
 const router = Router();
 
 // create new user
-router.post('/signup', 
+router.post(
+    '/signup',
     [
         check('username').isLength({ min: RULE.USR_MIN_LEN, max: RULE.USR_MAX_LEN }),
-        check('password').isLength({ min: RULE.PW_MIN_LEN,  max: RULE.PW_MAX_LEN }),
+        check('password').isLength({ min: RULE.PW_MIN_LEN, max: RULE.PW_MAX_LEN })
     ],
     signupUser
 );
 
 // login existing user
-router.post('/login', 
+router.post(
+    '/login',
     [
         check('username').isLength({ min: RULE.USR_MIN_LEN, max: RULE.USR_MAX_LEN }),
-        check('password').isLength({ min: RULE.PW_MIN_LEN,  max: RULE.PW_MAX_LEN})
+        check('password').isLength({ min: RULE.PW_MIN_LEN, max: RULE.PW_MAX_LEN })
     ],
     loginUser
 );
@@ -30,10 +31,9 @@ router.post('/login',
 router.use(authCheck);
 
 // update existing user password
-router.patch('/', changeUserPassword); 
+router.patch('/', changeUserPassword);
 
 // delete existing user
-router.delete('/', deleteUser); 
-
+router.delete('/', deleteUser);
 
 export default router;

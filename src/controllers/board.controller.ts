@@ -4,27 +4,26 @@ import { startSession, ClientSession } from 'mongoose';
 import User from '../models/user.model';
 import Board, { IBoard } from '../models/board.model';
 import List, { IList } from '../models/list.model';
-import Card, { ICard }  from '../models/card.model';
+import Card, { ICard } from '../models/card.model';
 import Checklist from '../models/checklist.model';
 import HTTPException from '../models/exception.model';
-import { EMiddleware, SBody, ModelName, CollectionName, cmp, isDebug } from '../util';
-
+import { EMiddleware, SBody, ModelName, CollectionName, cmp } from '../util';
 
 export const createBoard: EMiddleware = async (req, res, next) => {
     const errors: Result<ValidationError> = validationResult(req);
-    // verify request body  
-    if (!errors.isEmpty()) {    
+    // verify request body
+    if (!errors.isEmpty()) {
         return next(HTTPException.rMalformed(errors));
     }
     // extract request data from body
     const { color, name }: SBody = req.body;
     try {
-        const ts      : number = new Date().getTime();
+        const ts: number = new Date().getTime();
         const newBoard: IBoard = new Board({
             color,
             name,
-            owner    : req.userData.userId,
-            lists    : [],
+            owner: req.userData.userId,
+            lists: [],
             createdOn: ts,
             updatedOn: ts
         });
@@ -34,16 +33,19 @@ export const createBoard: EMiddleware = async (req, res, next) => {
         // save the new board
         await newBoard.save({ session });
         // connect new board to user who created said board
-        await User.findByIdAndUpdate(req.userData.userId, { $push: { [CollectionName.Board]: newBoard._id }, updatedOn: ts}, { session });
+        await User.findByIdAndUpdate(
+            req.userData.userId,
+            { $push: { [CollectionName.Board]: newBoard._id }, updatedOn: ts },
+            { session }
+        );
         // commit changes
         await session.commitTransaction();
         // return the created object in response
         res.status(201).json(newBoard.toObject());
-    } catch(err) {
+    } catch (err) {
         next(HTTPException.rInternal(err));
     }
 };
-
 
 export const getBoardsByUserId: EMiddleware = async (req, res, next) => {
     // extract request data from path
@@ -56,18 +58,17 @@ export const getBoardsByUserId: EMiddleware = async (req, res, next) => {
             const foundBoards: IBoard[] | null = await Board.find({ owner: req.userData.userId });
             if (foundBoards) {
                 // return the found boards with a 200 response
-                res.status(200).json(foundBoards.map(board => board.toObject()));
+                res.status(200).json(foundBoards.map((board) => board.toObject()));
             } else {
                 next(HTTPException.rNotFound('userId does not match any existing user'));
             }
-        } catch(err) {
+        } catch (err) {
             next(HTTPException.rInternal(err));
         }
     } else {
         next(HTTPException.rAuth('owner does not match authenticated user'));
     }
 };
-
 
 export const getBoardByBoardId: EMiddleware = async (req, res, next) => {
     // extract request data from path
@@ -76,7 +77,7 @@ export const getBoardByBoardId: EMiddleware = async (req, res, next) => {
         // find the board and populate the list and list.card fields
         // so only a single request have to be sent, to show an entire board
         const foundBoard: IBoard | null = await Board.findById(boardId).populate({
-            path: CollectionName.List, 
+            path: CollectionName.List,
             model: ModelName.List,
             populate: {
                 path: CollectionName.Card,
@@ -93,31 +94,32 @@ export const getBoardByBoardId: EMiddleware = async (req, res, next) => {
         } else {
             next(HTTPException.rNotFound('boardId does not match any existing board'));
         }
-    } catch(err) {
+    } catch (err) {
         next(HTTPException.rInternal(err));
     }
 };
 
-
 export const updateBoardByBoardId: EMiddleware = async (req, res, next) => {
     const errors: Result<ValidationError> = validationResult(req);
     // verify request body
-    if (!errors.isEmpty()) {    
+    if (!errors.isEmpty()) {
         return next(HTTPException.rMalformed(errors));
     }
     // extract request data from path and body
-    const boardId        : string        = req.params.boardId;
-    const { color, name }: SBody         = req.body;
+    const boardId: string = req.params.boardId;
+    const { color, name }: SBody = req.body;
     try {
-        const updatedOn  : number        = new Date().getTime();
-        const foundBoard : IBoard | null = await Board.findById(boardId); 
+        const updatedOn: number = new Date().getTime();
+        const foundBoard: IBoard | null = await Board.findById(boardId);
         // verify requested board exists
         if (!foundBoard) {
-            next(HTTPException.rNotFound())
-        // verify that the user has access to the board
+            next(HTTPException.rNotFound());
+            // verify that the user has access to the board
         } else if (cmp(req.userData, foundBoard.owner)) {
             // update the board
-            foundBoard.color = color; foundBoard.name = name; foundBoard.updatedOn = updatedOn;
+            foundBoard.color = color;
+            foundBoard.name = name;
+            foundBoard.updatedOn = updatedOn;
             // save changes
             await foundBoard.save();
             // return updated board with a 200 response
@@ -125,11 +127,10 @@ export const updateBoardByBoardId: EMiddleware = async (req, res, next) => {
         } else {
             next(HTTPException.rAuth('incorrect token for desired action'));
         }
-    } catch(err) {
+    } catch (err) {
         next(HTTPException.rInternal(err));
     }
 };
-
 
 export const deleteBoardByBoardId: EMiddleware = async (req, res, next) => {
     // extract request data from path
@@ -139,7 +140,7 @@ export const deleteBoardByBoardId: EMiddleware = async (req, res, next) => {
         // verify that requested board exists
         if (!foundBoard) {
             next(HTTPException.rNotFound('board could not be found from boardId'));
-        // verify that the user has access to the board
+            // verify that the user has access to the board
         } else if (cmp(req.userData, foundBoard.owner)) {
             const updatedOn: number = new Date().getTime();
             // start transaction and attempt to make changes
@@ -157,22 +158,25 @@ export const deleteBoardByBoardId: EMiddleware = async (req, res, next) => {
                     // remove card itself
                     await foundCard.remove({ session });
                 });
-                // after cards and checklists are removed under a list, remove the list itself  
+                // after cards and checklists are removed under a list, remove the list itself
                 await foundList.remove({ session });
             });
             // remove board from user
-            await User.findByIdAndUpdate(req.userData.userId, { $pull: { [CollectionName.Board]: foundBoard._id }, updatedOn }, { session });
+            await User.findByIdAndUpdate(
+                req.userData.userId,
+                { $pull: { [CollectionName.Board]: foundBoard._id }, updatedOn },
+                { session }
+            );
             // remove the board itself
             await foundBoard.remove({ session });
             // commit changes
             await session.commitTransaction();
             // return the deleted board with a 200 response
-            res.status(200).json({message: `board ${foundBoard.name} successfully deleted`});
+            res.status(200).json({ message: `board ${foundBoard.name} successfully deleted` });
         } else {
             next(HTTPException.rAuth('incorrect token for desired action'));
         }
-    } catch(err) {
-        console.log(err)
+    } catch (err) {
         next(HTTPException.rInternal(err));
     }
 };
