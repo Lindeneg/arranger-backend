@@ -20,7 +20,7 @@ export const createCard: EMiddleware = async (req, res, next) => {
         const owningList: IList | null = await List.findById(owner);
         if (owningList) {
             // verify that the user has access to the list where the card should be tied to
-            if (cmp(req.userData, owningList.owner)) {
+            if (cmp(req.userData, owningList.indirectOwner)) {
                 const ts     : number = new Date().getTime();
                 const newCard: ICard  = new Card({
                     name,
