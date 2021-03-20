@@ -14,7 +14,13 @@ export const authCheck: EMiddleware = (req, res, next) => {
                     req.userData = decToken;
                     next();
                 } else {
-                    next(HTTPException.rAuth('token could not be successfully verified'));
+                    next(
+                        new HTTPException(
+                            'You need to login to perform the desired action.',
+                            511,
+                            'token could not be successfully verified'
+                        )
+                    );
                 }
             } else {
                 next(HTTPException.rMalformed('authorization header is invalid'));
