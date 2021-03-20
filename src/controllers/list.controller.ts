@@ -139,9 +139,6 @@ export const updateListByListId: EMiddleware = async (req, res, next) => {
 };
 
 export const deleteListByListId: EMiddleware = async (req, res, next) => {
-    // TODO  USE collection.bulkWrite instead of removing/deleting in forEach
-
-
     // extract request data from path
     const listId: string = req.params.listId;
     try {
@@ -155,7 +152,7 @@ export const deleteListByListId: EMiddleware = async (req, res, next) => {
             // start transaction and attempt to make changes
             const session: ClientSession = await startSession();
             session.startTransaction();
-            // remove list from board
+            // remove list reference from board
             await Board.findByIdAndUpdate(
                 foundList.owner,
                 { $pull: { [CollectionName.List]: foundList._id, [CollectionName.Order]: foundList._id }, updatedOn },
@@ -164,13 +161,31 @@ export const deleteListByListId: EMiddleware = async (req, res, next) => {
             // find all cards under the list
             const foundCards: ICard[] | null = await Card.find({ owner: foundList._id }, null, { session });
             // iterate over each found card
-            await foundCards.forEach(async (foundCard: ICard) => {
-                // delete all checklists under each card
-                await Checklist.deleteMany({ owner: foundCard._id }, { session });
-                // delete the card itself
-                await foundCard.remove({ session });
+            foundCards.forEach(async (foundCard: ICard) => {
+                // remove related checklists under iterated card
+                await Checklist.bulkWrite(
+                    [
+                        {
+                            deleteMany: {
+                                filter: { owner: foundCard._id }
+                            }
+                        }
+                    ],
+                    { session }
+                );
             });
-            // remove the list itself
+            // remove all cards under list
+            await Card.bulkWrite(
+                [
+                    {
+                        deleteMany: {
+                            filter: { owner: foundList._id }
+                        }
+                    }
+                ],
+                { session }
+            );
+            // finally remove the list itself
             await foundList.remove({ session });
             // commit changes
             await session.commitTransaction();
