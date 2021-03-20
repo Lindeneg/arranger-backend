@@ -24,6 +24,7 @@ export const createBoard: EMiddleware = async (req, res, next) => {
             name,
             owner: req.userData.userId,
             lists: [],
+            order: [],
             createdOn: ts,
             updatedOn: ts
         });
@@ -108,6 +109,7 @@ export const updateBoardByBoardId: EMiddleware = async (req, res, next) => {
     // extract request data from path and body
     const boardId: string = req.params.boardId;
     const { color, name }: SBody = req.body;
+    const { order }: { [k: string]: string[] } = req.body;
     try {
         const updatedOn: number = new Date().getTime();
         const foundBoard: IBoard | null = await Board.findById(boardId);
@@ -119,6 +121,7 @@ export const updateBoardByBoardId: EMiddleware = async (req, res, next) => {
             // update the board
             foundBoard.color = color;
             foundBoard.name = name;
+            foundBoard.order = order;
             foundBoard.updatedOn = updatedOn;
             // save changes
             await foundBoard.save();
@@ -146,6 +149,12 @@ export const deleteBoardByBoardId: EMiddleware = async (req, res, next) => {
             // start transaction and attempt to make changes
             const session: ClientSession = await startSession();
             session.startTransaction();
+            // remove board from user
+            await User.findByIdAndUpdate(
+                req.userData.userId,
+                { $pull: { [CollectionName.Board]: foundBoard._id }, updatedOn },
+                { session }
+            );
             // find all lists under the board
             const foundLists: IList[] | null = await List.find({ owner: foundBoard._id }, null, { session });
             // iterate over each found list
@@ -153,18 +162,39 @@ export const deleteBoardByBoardId: EMiddleware = async (req, res, next) => {
                 const foundCards: ICard[] | null = await Card.find({ owner: foundList._id }, null, { session });
                 // iterate over each found card
                 foundCards.forEach(async (foundCard: ICard) => {
-                    // remove all checklist associated with each card
-                    await Checklist.deleteMany({ owner: foundCard._id }, { session });
-                    // remove card itself
-                    await foundCard.remove({ session });
+                    // remove related checklists
+                    await Checklist.bulkWrite(
+                        [
+                            {
+                                deleteMany: {
+                                    filter: { owner: foundCard._id }
+                                }
+                            }
+                        ],
+                        { session }
+                    );
                 });
-                // after cards and checklists are removed under a list, remove the list itself
-                await foundList.remove({ session });
+                // remove related cards
+                await Card.bulkWrite(
+                    [
+                        {
+                            deleteMany: {
+                                filter: { owner: foundList._id }
+                            }
+                        }
+                    ],
+                    { session }
+                );
             });
-            // remove board from user
-            await User.findByIdAndUpdate(
-                req.userData.userId,
-                { $pull: { [CollectionName.Board]: foundBoard._id }, updatedOn },
+            // after cards and checklists are removed under a list, remove the list itself
+            await List.bulkWrite(
+                [
+                    {
+                        deleteMany: {
+                            filter: { owner: foundBoard._id }
+                        }
+                    }
+                ],
                 { session }
             );
             // remove the board itself

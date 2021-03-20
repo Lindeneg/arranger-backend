@@ -148,14 +148,14 @@ export const deleteCardByCardId: EMiddleware = async (req, res, next) => {
             // start transaction and attempt to make changes
             const session: ClientSession = await startSession();
             session.startTransaction();
-            // remove checklists under card
-            await Checklist.deleteMany({ owner: foundCard._id }, { session });
             // remove card from owning list
             await List.findByIdAndUpdate(
                 foundCard.owner,
                 { $pull: { [CollectionName.Card]: foundCard._id }, updatedOn },
                 { session }
             );
+            // remove checklists under card
+            await Checklist.deleteMany({ owner: foundCard._id }, { session });
             // remove the card itself
             await foundCard.remove({ session });
             // commit changes

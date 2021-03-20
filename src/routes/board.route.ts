@@ -37,7 +37,8 @@ router.patch(
     '/:boardId',
     [
         check('color').isLength({ min: 1, max: RULE.DEFAULT_MAX_LEN }),
-        check('name').isLength({ min: 1, max: RULE.DEFAULT_MAX_LEN })
+        check('name').isLength({ min: 1, max: RULE.DEFAULT_MAX_LEN }),
+        check('order').isArray()
     ],
     updateBoardByBoardId
 );

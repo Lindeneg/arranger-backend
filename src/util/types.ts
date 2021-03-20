@@ -38,7 +38,8 @@ export enum CollectionName {
     Board = 'boards',
     List = 'lists',
     Card = 'cards',
-    Checklist = 'checklists'
+    Checklist = 'checklists',
+    Order = 'order'
 }
 
 export type DevError = string | Result<ValidationError>;

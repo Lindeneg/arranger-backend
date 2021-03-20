@@ -33,6 +33,7 @@ export const createList: EMiddleware = async (req, res, next) => {
                 });
                 // add list to owning board
                 owningBoard[CollectionName.List].push(newList._id);
+                owningBoard[CollectionName.Order].push(newList._id);
                 // update owning board updatedOn
                 owningBoard.updatedOn = ts;
                 // start transaction and attempt to save changes
@@ -138,6 +139,9 @@ export const updateListByListId: EMiddleware = async (req, res, next) => {
 };
 
 export const deleteListByListId: EMiddleware = async (req, res, next) => {
+    // TODO  USE collection.bulkWrite instead of removing/deleting in forEach
+
+
     // extract request data from path
     const listId: string = req.params.listId;
     try {
@@ -151,21 +155,21 @@ export const deleteListByListId: EMiddleware = async (req, res, next) => {
             // start transaction and attempt to make changes
             const session: ClientSession = await startSession();
             session.startTransaction();
+            // remove list from board
+            await Board.findByIdAndUpdate(
+                foundList.owner,
+                { $pull: { [CollectionName.List]: foundList._id, [CollectionName.Order]: foundList._id }, updatedOn },
+                { session }
+            );
             // find all cards under the list
             const foundCards: ICard[] | null = await Card.find({ owner: foundList._id }, null, { session });
             // iterate over each found card
-            foundCards.forEach(async (foundCard: ICard) => {
+            await foundCards.forEach(async (foundCard: ICard) => {
                 // delete all checklists under each card
                 await Checklist.deleteMany({ owner: foundCard._id }, { session });
                 // delete the card itself
                 await foundCard.remove({ session });
             });
-            // remove list from board
-            await Board.findByIdAndUpdate(
-                foundList.owner,
-                { $pull: { [CollectionName.List]: foundList._id }, updatedOn },
-                { session }
-            );
             // remove the list itself
             await foundList.remove({ session });
             // commit changes

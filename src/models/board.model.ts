@@ -8,6 +8,7 @@ export interface IBoard extends BaseDoc {
     color: string;
     owner: IUser['_id'];
     lists: Array<IList['_id']>;
+    order: string[];
 }
 
 const boardSchema: Schema = new Schema({
@@ -15,6 +16,7 @@ const boardSchema: Schema = new Schema({
     name: { type: String, required: true },
     owner: { type: Types.ObjectId, required: true, ref: ModelName.User },
     lists: { type: [Types.ObjectId], required: true, ref: ModelName.List },
+    order: { type: [String], required: true },
     createdOn: { type: Number, required: true },
     updatedOn: { type: Number, required: true }
 });
