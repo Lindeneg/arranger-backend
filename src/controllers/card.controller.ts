@@ -111,7 +111,7 @@ export const updateCardByCardId: EMiddleware = async (req, res, next) => {
     }
     // extract request data from path and body
     const cardId: string = req.params.cardId;
-    const { name, description, color }: SBody = req.body;
+    const { name, description, color, owner }: SBody = req.body;
     try {
         const updatedOn: number = new Date().getTime();
         const foundCard: ICard | null = await Card.findById(cardId);
@@ -120,6 +120,18 @@ export const updateCardByCardId: EMiddleware = async (req, res, next) => {
             next(HTTPException.rNotFound());
             // verify that the user has access to card
         } else if (cmp(req.userData, foundCard.indirectOwner)) {
+            // check if we're updating the owning list
+            if (owner.toString() !== foundCard.owner.toString()) {
+                // verify that the new owner exists
+                const newOwner: IList | null = await List.findById(owner);
+                if (newOwner) {
+                    // update the owner
+                    foundCard.owner = newOwner._id;
+                } else {
+                    // trying to set invalid owner
+                    return next(HTTPException.rNotFound('new owner not found'));
+                }
+            }
             // update the card
             foundCard.name = name;
             foundCard.description = description;

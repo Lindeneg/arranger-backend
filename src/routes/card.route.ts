@@ -40,7 +40,8 @@ router.patch(
     [
         check('description').isLength({ min: 1, max: RULE.DES_MAX_LEN }),
         check('color').isLength({ min: 1, max: RULE.DEFAULT_MAX_LEN }),
-        check('name').isLength({ min: 1, max: RULE.USR_MAX_LEN })
+        check('name').isLength({ min: 1, max: RULE.USR_MAX_LEN }),
+        check('owner').not().isEmpty()
     ],
     updateCardByCardId
 );
