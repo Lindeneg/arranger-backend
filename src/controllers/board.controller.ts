@@ -109,7 +109,7 @@ export const updateBoardByBoardId: EMiddleware = async (req, res, next) => {
     // extract request data from path and body
     const boardId: string = req.params.boardId;
     const { color, name }: SBody = req.body;
-    const { order }: { [k: string]: string[] } = req.body;
+    const { order }: SBody<string[]> = req.body;
     try {
         const updatedOn: number = new Date().getTime();
         const foundBoard: IBoard | null = await Board.findById(boardId);
@@ -121,8 +121,8 @@ export const updateBoardByBoardId: EMiddleware = async (req, res, next) => {
             // update the board
             foundBoard.color = color;
             foundBoard.name = name;
-            foundBoard.order = order;
             foundBoard.updatedOn = updatedOn;
+            foundBoard.order = order;
             // save changes
             await foundBoard.save();
             // return updated board with a 200 response
@@ -152,7 +152,10 @@ export const deleteBoardByBoardId: EMiddleware = async (req, res, next) => {
             // remove board from user
             await User.findByIdAndUpdate(
                 req.userData.userId,
-                { $pull: { [CollectionName.Board]: foundBoard._id }, updatedOn },
+                {
+                    $pull: { [CollectionName.Board]: foundBoard._id },
+                    updatedOn
+                },
                 { session }
             );
             // find all lists under the board

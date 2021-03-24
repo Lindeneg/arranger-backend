@@ -8,6 +8,10 @@ export interface BaseDoc extends Document {
     updatedOn: number;
 }
 
+export interface Orderable {
+    order: string[];
+} 
+
 export interface IndirectRelation<T extends BaseDoc> {
     indirectOwner: T['_id'];
 }
