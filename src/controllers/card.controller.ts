@@ -33,6 +33,7 @@ export const createCard: EMiddleware = async (req, res, next) => {
                 });
                 // add card to owning list
                 owningList[CollectionName.Card].push(newCard._id);
+                owningList[CollectionName.Order].push(newCard._id);
                 // update owning list updatedOn
                 owningList.updatedOn = ts;
                 // start transaction and attempt to save changes
@@ -163,7 +164,7 @@ export const deleteCardByCardId: EMiddleware = async (req, res, next) => {
             // remove card from owning list
             await List.findByIdAndUpdate(
                 foundCard.owner,
-                { $pull: { [CollectionName.Card]: foundCard._id }, updatedOn },
+                { $pull: { [CollectionName.Card]: foundCard._id, [CollectionName.Order]: foundCard._id }, updatedOn },
                 { session }
             );
             // remove checklists under card

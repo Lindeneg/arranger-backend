@@ -5,6 +5,7 @@ import {
     createList,
     getListsByBoardId,
     getListByListId,
+    updateListCardOrder,
     updateListByListId,
     deleteListByListId
 } from '../controllers/list.controller';
@@ -21,6 +22,19 @@ router.post(
     '/',
     [check('name').isLength({ min: 1, max: RULE.DEFAULT_MAX_LEN }), check('owner').not().isEmpty()],
     createList
+);
+
+// update list card order
+router.patch(
+    '/update/card/order',
+    [
+        check('srcListId').isMongoId(),
+        check('desListId').isMongoId(),
+        check('cardId').isMongoId(),
+        check('srcListOrder').isArray(),
+        check('desListOrder').isArray()
+    ],
+    updateListCardOrder
 );
 
 // get all lists from board id

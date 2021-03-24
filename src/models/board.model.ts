@@ -2,13 +2,12 @@ import { Schema, Types, model } from 'mongoose';
 
 import { IUser } from './user.model';
 import { IList } from './list.model';
-import { BaseDoc, ModelName } from '../util/types';
+import { BaseDoc, ModelName, Orderable } from '../util/types';
 
-export interface IBoard extends BaseDoc {
+export interface IBoard extends BaseDoc, Orderable {
     color: string;
     owner: IUser['_id'];
     lists: Array<IList['_id']>;
-    order: string[];
 }
 
 const boardSchema: Schema = new Schema({

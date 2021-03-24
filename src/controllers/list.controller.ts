@@ -27,6 +27,7 @@ export const createList: EMiddleware = async (req, res, next) => {
                     name,
                     owner: owningBoard._id,
                     cards: [],
+                    order: [],
                     indirectOwner: req.userData.userId,
                     createdOn: ts,
                     updatedOn: ts
@@ -132,6 +133,77 @@ export const updateListByListId: EMiddleware = async (req, res, next) => {
             res.status(200).json(foundList.toObject());
         } else {
             next(HTTPException.rAuth('incorrect token for desired action'));
+        }
+    } catch (err) {
+        next(HTTPException.rInternal(err));
+    }
+};
+
+export const updateListCardOrder: EMiddleware = async (req, res, next) => {
+    const errors: Result<ValidationError> = validationResult(req);
+    // verify request body
+    if (!errors.isEmpty()) {
+        return next(HTTPException.rMalformed(errors));
+    }
+    // extract request data from body
+    const { srcListId, desListId, cardId }: SBody = req.body;
+    const { srcListOrder, desListOrder }: SBody<string[]> = req.body;
+    try {
+        const updatedOn: number = new Date().getTime();
+        const srcList: IList | null = await List.findById(srcListId);
+        // verify source exists
+        if (srcList) {
+            // verify user has access to source
+            if (!cmp(req.userData, srcList.indirectOwner)) {
+                return next(HTTPException.rAuth('src list is inaccessible'));
+            }
+            const session: ClientSession = await startSession();
+            session.startTransaction();
+            // the source list should always have its card order updated
+            await srcList.updateOne({ order: srcListOrder, updatedOn }, { session });
+            // if the source and destination lists are not equal
+            // we need to update the destination as well
+            if (srcListId !== desListId) {
+                const desList: IList | null = await List.findById(desListId, null, { session });
+                // verify destination exists
+                if (desList) {
+                    // verify user has access to destination
+                    if (!cmp(req.userData, desList.indirectOwner)) {
+                        return next(HTTPException.rAuth('des list is inaccessible'));
+                    }
+                    // a card must have changed owner when the source and destination are not equal
+                    const card: ICard | null = await Card.findById(cardId, null, { session });
+                    // verify card exists
+                    if (card) {
+                        // verify user has access to card
+                        if (!cmp(req.userData, card.indirectOwner)) {
+                            return next(HTTPException.rAuth('card is inaccessible'));
+                        }
+                        // pull the card from the source list
+                        await srcList.updateOne({ $pull: { [CollectionName.Card]: cardId } }, { session });
+                        // add the card to the destination list and update the card order
+                        await desList.updateOne(
+                            {
+                                $push: { [CollectionName.Card]: cardId },
+                                order: desListOrder,
+                                updatedOn
+                            },
+                            { session }
+                        );
+                        // update the card owner
+                        await card.updateOne({ owner: desList._id, updatedOn }, { session });
+                    } else {
+                        return next(HTTPException.rNotFound('card not found'));
+                    }
+                } else {
+                    return next(HTTPException.rNotFound('des list not found'));
+                }
+            }
+            // commit the changes
+            await session.commitTransaction();
+            res.status(201).json({ message: 'entries successfully updated' });
+        } else {
+            next(HTTPException.rNotFound('src list not found'));
         }
     } catch (err) {
         next(HTTPException.rInternal(err));
