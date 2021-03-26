@@ -118,5 +118,5 @@ export const deleteUser: EMiddleware = async (req, res, next) => {
 };
 
 export const changeUserPassword: EMiddleware = async (req, res, next) => {
-    // TODO
+    next(HTTPException.rUnprocessable('method not yet implemented'));
 };
