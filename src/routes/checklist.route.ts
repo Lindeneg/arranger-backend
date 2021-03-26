@@ -21,7 +21,7 @@ router.post(
     '/',
     [
         check('name').isLength({ min: 1, max: RULE.DEFAULT_MAX_LEN }),
-        check('description').isLength({ min: 1, max: RULE.DEFAULT_MAX_LEN }),
+        check('description').isLength({ min: 1, max: RULE.CHECKLIST_MAX_LEN }),
         check('isCompleted').isBoolean(),
         check('owner').not().isEmpty()
     ],
@@ -39,7 +39,7 @@ router.patch(
     '/:checklistId',
     [
         check('name').isLength({ min: 1, max: RULE.DEFAULT_MAX_LEN }),
-        check('description').isLength({ min: 1, max: RULE.DEFAULT_MAX_LEN }),
+        check('description').isLength({ min: 1, max: RULE.CHECKLIST_MAX_LEN }),
         check('isCompleted').isBoolean()
     ],
     updateChecklistByChecklistId

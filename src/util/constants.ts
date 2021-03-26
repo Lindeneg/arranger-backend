@@ -4,6 +4,7 @@ export const RULE = {
     USR_MIN_LEN: 4,
     USR_MAX_LEN: 16,
     DEFAULT_MAX_LEN: 32,
+    CHECKLIST_MAX_LEN: 64,
     DES_MAX_LEN: 128
 };
 
