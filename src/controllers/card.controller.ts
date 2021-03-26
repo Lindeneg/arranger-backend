@@ -115,7 +115,10 @@ export const updateCardByCardId: EMiddleware = async (req, res, next) => {
     const { name, description, color, owner }: SBody = req.body;
     try {
         const updatedOn: number = new Date().getTime();
-        const foundCard: ICard | null = await Card.findById(cardId);
+        const foundCard: ICard | null = await Card.findById(cardId).populate({
+            path: CollectionName.Checklist,
+            model: ModelName.Checklist
+        });
         // find the card that should be updated
         if (!foundCard) {
             next(HTTPException.rNotFound());
