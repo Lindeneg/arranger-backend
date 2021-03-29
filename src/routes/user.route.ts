@@ -31,7 +31,7 @@ router.post(
 router.use(authCheck);
 
 // update existing user password
-router.patch('/', changeUserPassword);
+router.patch('/', check('password').isLength({ min: RULE.PW_MIN_LEN, max: RULE.PW_MAX_LEN }), changeUserPassword);
 
 // delete existing user
 router.delete('/', deleteUser);

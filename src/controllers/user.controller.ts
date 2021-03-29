@@ -118,5 +118,24 @@ export const deleteUser: EMiddleware = async (req, res, next) => {
 };
 
 export const changeUserPassword: EMiddleware = async (req, res, next) => {
-    next(HTTPException.rUnprocessable('method not yet implemented'));
+    const errors: Result<ValidationError> = validationResult(req);
+    // verify request body
+    if (!errors.isEmpty()) {
+        return next(HTTPException.rMalformed(errors));
+    }
+    // extract request data from body
+    const { password }: SBody = req.body;
+    try {
+        const user: IUser | null = await User.findById(req.userData.userId);
+        if (user) {
+            const ts: number = new Date().getTime();
+            const newPassword: string = await bcrypt.hash(password, 12);
+            await user.updateOne({ password: newPassword, updatedOn: ts });
+            res.status(200).json({ message: `user ${user.username} successfully deleted` });
+        } else {
+            next(HTTPException.rNotFound('no user matches the requested id'));
+        }
+    } catch (err) {
+        next(HTTPException.rInternal(err));
+    }
 };
