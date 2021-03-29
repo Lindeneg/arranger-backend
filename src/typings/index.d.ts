@@ -1,4 +1,4 @@
-import { TokenData } from './util';
+import { TokenData } from './types';
 
 // https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/express-serve-static-core/index.d.ts#L15-L23
 

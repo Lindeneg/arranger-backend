@@ -151,7 +151,12 @@ export const deleteChecklistByChecklistId: EMiddleware = async (req, res, next) 
             // remove checklist from card
             await Card.findByIdAndUpdate(
                 foundChecklist.owner,
-                { $pull: { [CollectionName.Checklist]: foundChecklist._id }, updatedOn },
+                {
+                    $pull: {
+                        [CollectionName.Checklist]: foundChecklist._id
+                    },
+                    updatedOn
+                },
                 { session }
             );
             // remove the checklist itself
