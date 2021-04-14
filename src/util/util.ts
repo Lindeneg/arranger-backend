@@ -5,7 +5,7 @@ import { TokenData } from './types';
 // create a new jwt token
 export const getToken = (pl: string | object): string | null => {
     if (typeof process.env.JWT_PRIVATE_TOKEN !== 'undefined') {
-        return jwt.sign(pl, process.env.JWT_PRIVATE_TOKEN, { expiresIn: '1h' });
+        return jwt.sign(pl, process.env.JWT_PRIVATE_TOKEN, { expiresIn: '6h' });
     }
     return null;
 };

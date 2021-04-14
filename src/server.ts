@@ -7,9 +7,9 @@ import { config } from 'dotenv';
 
 import userRouter from './routes/user.route';
 import boardRouter from './routes/board.route';
-import listRouter from './routes/list.route';
+/* import listRouter from './routes/list.route';
 import cardRouter from './routes/card.route';
-import checklistRouter from './routes/checklist.route';
+import checklistRouter from './routes/checklist.route'; */
 import HTTPException from './models/exception.model';
 import { isDebug, requiredEnvVars } from './util';
 
@@ -40,9 +40,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // available API routes
 app.use('/api/user', userRouter);
 app.use('/api/boards', boardRouter);
-app.use('/api/lists', listRouter);
+/* app.use('/api/lists', listRouter);
 app.use('/api/cards', cardRouter);
-app.use('/api/checklists', checklistRouter);
+app.use('/api/checklists', checklistRouter); */
 
 // if no routes are met, then respond with a 404
 app.use((req: Request, res: Response, next: NextFunction) => {

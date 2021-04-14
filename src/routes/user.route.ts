@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { check } from 'express-validator';
 
-import { signupUser, loginUser, deleteUser, changeUserPassword } from '../controllers/user.controller';
+import { signupUser, loginUser, updateUser, deleteUser } from '../controllers/user.controller';
 import { authCheck } from '../middleware/auth.middleware';
 import { RULE } from '../util';
 
@@ -12,7 +12,8 @@ router.post(
     '/signup',
     [
         check('username').isLength({ min: RULE.USR_MIN_LEN, max: RULE.USR_MAX_LEN }),
-        check('password').isLength({ min: RULE.PW_MIN_LEN, max: RULE.PW_MAX_LEN })
+        check('password').isLength({ min: RULE.PW_MIN_LEN, max: RULE.PW_MAX_LEN }),
+        check('theme').not().isEmpty()
     ],
     signupUser
 );
@@ -30,8 +31,8 @@ router.post(
 // all subsequent routes should utilize authentication
 router.use(authCheck);
 
-// update existing user password
-router.patch('/', check('password').isLength({ min: RULE.PW_MIN_LEN, max: RULE.PW_MAX_LEN }), changeUserPassword);
+// update user
+router.patch('/', updateUser);
 
 // delete existing user
 router.delete('/', deleteUser);

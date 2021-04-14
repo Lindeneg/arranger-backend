@@ -10,7 +10,7 @@ export interface BaseDoc extends Document {
 
 export interface Orderable {
     order: string[];
-} 
+}
 
 export interface IndirectRelation<T extends BaseDoc> {
     indirectOwner: T['_id'];
@@ -28,6 +28,10 @@ export interface SBody<T = string> {
 export interface TokenData {
     userId: string;
 }
+
+export type CardColorOption = 'blue' | 'gray' | 'green' | 'red' | 'yellow' | 'teal' | 'light' | 'dark';
+
+export type ThemeOption = 'light' | 'dark';
 
 export enum ModelName {
     User = 'User',

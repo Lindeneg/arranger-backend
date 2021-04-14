@@ -20,8 +20,8 @@ router.use(authCheck);
 router.post(
     '/',
     [
-        check('color').isLength({ min: 1, max: RULE.DEFAULT_MAX_LEN }),
-        check('name').isLength({ min: 1, max: RULE.DEFAULT_MAX_LEN })
+        check('color').isLength({ min: 4, max: 5 }),
+        check('name').isLength({ min: 1, max: RULE.BRD_MAX_LEN })
     ],
     createBoard
 );

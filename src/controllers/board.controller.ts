@@ -24,7 +24,7 @@ export const createBoard: EMiddleware = async (req, res, next) => {
             name,
             owner: req.userData.userId,
             lists: [],
-            order: [],
+            listOrder: [],
             createdOn: ts,
             updatedOn: ts
         });
@@ -122,7 +122,7 @@ export const updateBoardByBoardId: EMiddleware = async (req, res, next) => {
             foundBoard.color = color;
             foundBoard.name = name;
             foundBoard.updatedOn = updatedOn;
-            foundBoard.order = order;
+            foundBoard.listOrder = order;
             // save changes
             await foundBoard.save();
             // return updated board with a 200 response
