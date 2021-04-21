@@ -29,7 +29,15 @@ export interface TokenData {
     userId: string;
 }
 
-export type CardColorOption = 'blue' | 'gray' | 'green' | 'red' | 'yellow' | 'teal' | 'light' | 'dark';
+export type CardColorOption =
+    | 'blue'
+    | 'gray'
+    | 'green'
+    | 'red'
+    | 'yellow'
+    | 'teal'
+    | 'light'
+    | 'dark';
 
 export type ThemeOption = 'light' | 'dark';
 
@@ -46,8 +54,13 @@ export enum CollectionName {
     Board = 'boards',
     List = 'lists',
     Card = 'cards',
-    Checklist = 'checklists',
-    Order = 'order'
+    Checklist = 'checklists'
+}
+
+export enum OrderName {
+    List = 'listOrder',
+    Card = 'cardOrder',
+    Checklist = 'checklistOrder'
 }
 
 export type DevError = string | Result<ValidationError>;

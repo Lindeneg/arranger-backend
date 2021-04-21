@@ -29,7 +29,11 @@ export const verifyToken = (token: string): TokenData | null => {
 
 // compare userId found in jwt payload with the target string
 export const cmp = (tokenData: TokenData | undefined, target: string | any): boolean => {
-    if (typeof tokenData !== 'undefined' && typeof tokenData.userId !== 'undefined' && typeof target !== 'undefined') {
+    if (
+        typeof tokenData !== 'undefined' &&
+        typeof tokenData.userId !== 'undefined' &&
+        typeof target !== 'undefined'
+    ) {
         try {
             return tokenData.userId.toString() === target.toString();
         } catch (err) {
@@ -41,3 +45,43 @@ export const cmp = (tokenData: TokenData | undefined, target: string | any): boo
 
 // check if we're running in dev mode
 export const isDebug = (): boolean => process.env.NODE_ENV === 'development';
+
+export const getUpdatedCardOrder = (
+    targetId: string,
+    srcId: string,
+    srcIdx: number,
+    srcOrder: string[],
+    desId: string,
+    desIdx: number,
+    desOrder: string[]
+): { srcOrder: string[]; desOrder: string[] } | null => {
+    try {
+        const newSrcCardOrder = [...srcOrder];
+        const newDesCardOrder = [...desOrder];
+        if (newSrcCardOrder[srcIdx].toString() === targetId.toString()) {
+            const [orderTarget] = newSrcCardOrder.splice(srcIdx, 1);
+            (srcId.toString() === desId.toString() ? newSrcCardOrder : newDesCardOrder).splice(
+                desIdx,
+                0,
+                orderTarget
+            );
+            return {
+                srcOrder: newSrcCardOrder,
+                desOrder: newDesCardOrder
+            };
+        }
+    } catch (err) {
+        isDebug() && console.log(err);
+    }
+    return null;
+};
+
+export function validateBody(...args: Array<[string | undefined, number, number]>): boolean {
+    for (let i = 0; i < args.length; i++) {
+        const [target, min, max] = args[i];
+        if (typeof target !== 'undefined' && (target.length < min || target.length > max)) {
+            return false;
+        }
+    }
+    return true;
+}

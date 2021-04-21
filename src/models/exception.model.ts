@@ -24,7 +24,11 @@ export default class HTTPException extends Error {
     }
 
     public static rMalformed(error?: DevError): HTTPException {
-        return new HTTPException('The requested action could not be exercised due to malformed syntax.', 400, error);
+        return new HTTPException(
+            'The requested action could not be exercised due to malformed syntax.',
+            400,
+            error
+        );
     }
 
     public static rInternal(error?: DevError): HTTPException {

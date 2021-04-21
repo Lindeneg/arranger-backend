@@ -2,11 +2,10 @@ import { Router } from 'express';
 import { check } from 'express-validator';
 
 import {
-    createCard,
-    getCardsByListId,
-    getCardByCardId,
-    updateCardByCardId,
-    deleteCardByCardId
+	createCard,
+	updateCardByCardId,
+	updateCardChecklistOrderByCardId,
+	deleteCardByCardId
 } from '../controllers/card.controller';
 import { authCheck } from '../middleware/auth.middleware';
 import { RULE } from '../util';
@@ -18,32 +17,23 @@ router.use(authCheck);
 
 // create new card
 router.post(
-    '/',
-    [
-        check('description').isLength({ min: 1, max: RULE.DES_MAX_LEN }),
-        check('color').isLength({ min: 1, max: RULE.DEFAULT_MAX_LEN }),
-        check('name').isLength({ min: 1, max: RULE.USR_MAX_LEN }),
-        check('owner').not().isEmpty()
-    ],
-    createCard
+	'/',
+	[
+		check('color').isLength({ min: RULE.COL_MIN_LEN, max: RULE.COL_MAX_LEN }),
+		check('name').isLength({ min: 1, max: RULE.CRD_NAME_MAX_LEN }),
+		check('owner').not().isEmpty()
+	],
+	createCard
 );
 
-// get all cards from list id
-router.get('/list/:listId', getCardsByListId);
+// // update card from card id
+router.patch('/:cardId', check('owner').not().isEmpty(), updateCardByCardId);
 
-// get card from card id
-router.get('/:cardId', getCardByCardId);
-
-// update card from card id
+// update card checklist list order from card id
 router.patch(
-    '/:cardId',
-    [
-        check('description').isLength({ min: 1, max: RULE.DES_MAX_LEN }),
-        check('color').isLength({ min: 1, max: RULE.DEFAULT_MAX_LEN }),
-        check('name').isLength({ min: 1, max: RULE.USR_MAX_LEN }),
-        check('owner').not().isEmpty()
-    ],
-    updateCardByCardId
+	'/:cardId/update/checklist/order',
+	[check('srcIdx').isNumeric(), check('desIdx').isNumeric()],
+	updateCardChecklistOrderByCardId
 );
 
 // delete card from card id

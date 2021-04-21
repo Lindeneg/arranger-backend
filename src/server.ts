@@ -7,9 +7,9 @@ import { config } from 'dotenv';
 
 import userRouter from './routes/user.route';
 import boardRouter from './routes/board.route';
-/* import listRouter from './routes/list.route';
+import listRouter from './routes/list.route';
 import cardRouter from './routes/card.route';
-import checklistRouter from './routes/checklist.route'; */
+import checklistRouter from './routes/checklist.route';
 import HTTPException from './models/exception.model';
 import { isDebug, requiredEnvVars } from './util';
 
@@ -32,7 +32,10 @@ app.use(bodyParserJSON());
 // expected request origin, headers and methods.
 app.use((req: Request, res: Response, next: NextFunction) => {
     res.setHeader('Access-Control-Allow-Origin', process.env.WHITELISTED_DOMAIN || '*');
-    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Origin, X-Requested-With, Content-Type, Accept, Authorization'
+    );
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE');
     next();
 });
@@ -40,9 +43,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // available API routes
 app.use('/api/user', userRouter);
 app.use('/api/boards', boardRouter);
-/* app.use('/api/lists', listRouter);
+app.use('/api/lists', listRouter);
 app.use('/api/cards', cardRouter);
-app.use('/api/checklists', checklistRouter); */
+app.use('/api/checklists', checklistRouter);
 
 // if no routes are met, then respond with a 404
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -56,7 +59,11 @@ app.use((error: HTTPException | any, req: Request, res: Response, next: NextFunc
     } else {
         const fallBack: string = isDebug() ? error : 'Something went wrong. Please try again.';
         res.status(error.statusCode || 500).json(
-            error instanceof HTTPException ? error.toResponse() : error instanceof Error ? error.message : fallBack
+            error instanceof HTTPException
+                ? error.toResponse()
+                : error instanceof Error
+                ? error.message
+                : fallBack
         );
     }
 });
@@ -65,9 +72,11 @@ app.use((error: HTTPException | any, req: Request, res: Response, next: NextFunc
 console.log('connecting to mongodb...');
 // https://mongoosejs.com/docs/deprecations.html
 connect(
-    `mongodb+srv://${process.env.MONGO_DB_USER}:${encodeURIComponent(process.env.MONGO_DB_KEY || '')}@${
-        process.env.MONGO_DB_CLUSTER
-    }.mongodb.net/${process.env.MONGO_DB_NAME}?retryWrites=true&w=majority`,
+    `mongodb+srv://${process.env.MONGO_DB_USER}:${encodeURIComponent(
+        process.env.MONGO_DB_KEY || ''
+    )}@${process.env.MONGO_DB_CLUSTER}.mongodb.net/${
+        process.env.MONGO_DB_NAME
+    }?retryWrites=true&w=majority`,
     {
         useNewUrlParser: true,
         useUnifiedTopology: true,

@@ -5,7 +5,7 @@ import Card, { ICard } from '../models/card.model';
 import List, { IList } from '../models/list.model';
 import Checklist from '../models/checklist.model';
 import HTTPException from '../models/exception.model';
-import { EMiddleware, SBody, ModelName, CollectionName, cmp } from '../util';
+import { RULE, EMiddleware, SBody, OrderName, CollectionName, cmp, validateBody } from '../util';
 
 export const createCard: EMiddleware = async (req, res, next) => {
     const errors: Result<ValidationError> = validationResult(req);
@@ -14,7 +14,7 @@ export const createCard: EMiddleware = async (req, res, next) => {
         return next(HTTPException.rMalformed(errors));
     }
     // extract request data from body
-    const { name, owner, description, color }: SBody = req.body;
+    const { name, owner, color }: SBody = req.body;
     try {
         const owningList: IList | null = await List.findById(owner);
         if (owningList) {
@@ -23,9 +23,10 @@ export const createCard: EMiddleware = async (req, res, next) => {
                 const ts: number = new Date().getTime();
                 const newCard: ICard = new Card({
                     name,
-                    description,
                     color,
+                    description: 'Please enter a description',
                     checklists: [],
+                    checklistOrder: [],
                     owner: owningList._id,
                     indirectOwner: req.userData.userId,
                     createdOn: ts,
@@ -33,7 +34,7 @@ export const createCard: EMiddleware = async (req, res, next) => {
                 });
                 // add card to owning list
                 owningList[CollectionName.Card].push(newCard._id);
-                owningList[CollectionName.Order].push(newCard._id);
+                owningList[OrderName.Card].push(newCard._id);
                 // update owning list updatedOn
                 owningList.updatedOn = ts;
                 // start transaction and attempt to save changes
@@ -56,48 +57,35 @@ export const createCard: EMiddleware = async (req, res, next) => {
     }
 };
 
-export const getCardsByListId: EMiddleware = async (req, res, next) => {
-    const listId: string = req.params.listId;
-    try {
-        // find the list where all cards should be returned from
-        const foundList: IList | null = await List.findById(listId);
-        if (foundList) {
-            // verify that the user has access to the list and therefore cards under that list
-            if (cmp(req.userData, foundList.indirectOwner)) {
-                const foundCards: ICard[] | null = await Card.find({ owner: foundList._id });
-                if (foundCards) {
-                    res.status(200).json(foundCards.map((card) => card.toObject()));
-                } else {
-                    next(HTTPException.rNotFound('no cards could be extracted from list'));
-                }
-            } else {
-                next(HTTPException.rAuth('owner does not match authenticated user'));
-            }
-        } else {
-            next(HTTPException.rNotFound('owning list could not be found'));
-        }
-    } catch (err) {
-        next(HTTPException.rInternal(err));
+export const updateCardChecklistOrderByCardId: EMiddleware = async (req, res, next) => {
+    const errors: Result<ValidationError> = validationResult(req);
+    // verify request body
+    if (!errors.isEmpty()) {
+        return next(HTTPException.rMalformed(errors));
     }
-};
-
-export const getCardByCardId: EMiddleware = async (req, res, next) => {
+    // extract request data from path and body
     const cardId: string = req.params.cardId;
+    const { srcIdx, desIdx }: SBody<number> = req.body;
     try {
-        // find the card and populate the checklist model in the card
-        const foundCard: ICard | null = await Card.findById(cardId).populate({
-            path: CollectionName.Checklist,
-            model: ModelName.Checklist
-        });
-        if (foundCard) {
+        const updatedOn: number = new Date().getTime();
+        const foundCard: ICard | null = await Card.findById(cardId);
+        // verify requested card exists
+        if (!foundCard) {
+            next(HTTPException.rNotFound());
             // verify that the user has access to the card
-            if (cmp(req.userData, foundCard.indirectOwner)) {
-                res.status(200).json(foundCard.toObject());
-            } else {
-                next(HTTPException.rAuth('owner does not match authenticated user'));
-            }
+        } else if (cmp(req.userData, foundCard.indirectOwner)) {
+            // update the card
+            const newOrder = [...foundCard.checklistOrder];
+            const [src] = newOrder.splice(srcIdx, 1);
+            newOrder.splice(desIdx, 0, src);
+            foundCard.checklistOrder = newOrder;
+            foundCard.updatedOn = updatedOn;
+            // save changes
+            await foundCard.save();
+            // return updated card with a 200 response
+            res.status(200).json(foundCard.toObject());
         } else {
-            next(HTTPException.rNotFound('cardId does not match any existing card'));
+            next(HTTPException.rAuth('incorrect token for desired action'));
         }
     } catch (err) {
         next(HTTPException.rInternal(err));
@@ -115,10 +103,7 @@ export const updateCardByCardId: EMiddleware = async (req, res, next) => {
     const { name, description, color, owner }: SBody = req.body;
     try {
         const updatedOn: number = new Date().getTime();
-        const foundCard: ICard | null = await Card.findById(cardId).populate({
-            path: CollectionName.Checklist,
-            model: ModelName.Checklist
-        });
+        const foundCard: ICard | null = await Card.findById(cardId);
         // find the card that should be updated
         if (!foundCard) {
             next(HTTPException.rNotFound());
@@ -136,15 +121,25 @@ export const updateCardByCardId: EMiddleware = async (req, res, next) => {
                     return next(HTTPException.rNotFound('new owner not found'));
                 }
             }
-            // update the card
-            foundCard.name = name;
-            foundCard.description = description;
-            foundCard.color = color;
-            foundCard.updatedOn = updatedOn;
-            // save the changes
-            await foundCard.save();
-            // return the updated object with a 200 response
-            res.status(200).json(foundCard.toObject());
+            if (
+                !validateBody(
+                    [name, 1, RULE.CRD_NAME_MAX_LEN],
+                    [description, 1, RULE.CRD_DES_MAX_LEN],
+                    [color, RULE.COL_MIN_LEN, RULE.COL_MAX_LEN]
+                )
+            ) {
+                next(HTTPException.rMalformed());
+            } else {
+                // update the card
+                foundCard.name = name ? name : foundCard.name;
+                foundCard.description = description ? description : foundCard.description;
+                foundCard.color = color ? color : foundCard.color;
+                foundCard.updatedOn = updatedOn;
+                // save the changes
+                await foundCard.save();
+                // return the updated object with a 200 response
+                res.status(200).json(foundCard.toObject());
+            }
         } else {
             next(HTTPException.rAuth('incorrect token for desired action'));
         }
@@ -167,7 +162,13 @@ export const deleteCardByCardId: EMiddleware = async (req, res, next) => {
             // remove card from owning list
             await List.findByIdAndUpdate(
                 foundCard.owner,
-                { $pull: { [CollectionName.Card]: foundCard._id, [CollectionName.Order]: foundCard._id }, updatedOn },
+                {
+                    $pull: {
+                        [CollectionName.Card]: foundCard._id,
+                        [OrderName.Card]: foundCard._id
+                    },
+                    updatedOn
+                },
                 { session }
             );
             // remove checklists under card
@@ -176,8 +177,8 @@ export const deleteCardByCardId: EMiddleware = async (req, res, next) => {
             await foundCard.remove({ session });
             // commit changes
             await session.commitTransaction();
-            // return name of deleted card with a 200 response
-            res.status(200).json({ message: `card ${foundCard.name} successfully deleted` });
+            // return the deleted card with a 200 response
+            res.status(200).json(foundCard.toObject());
         } else {
             next(HTTPException.rAuth('incorrect token for desired action'));
         }

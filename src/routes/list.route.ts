@@ -3,10 +3,8 @@ import { check } from 'express-validator';
 
 import {
     createList,
-    getListsByBoardId,
-    getListByListId,
-    updateListCardOrder,
     updateListByListId,
+    updateListCardOrder,
     deleteListByListId
 } from '../controllers/list.controller';
 import { authCheck } from '../middleware/auth.middleware';
@@ -20,31 +18,26 @@ router.use(authCheck);
 // create new list
 router.post(
     '/',
-    [check('name').isLength({ min: 1, max: RULE.DEFAULT_MAX_LEN }), check('owner').not().isEmpty()],
+    [check('name').isLength({ min: 1, max: RULE.LST_MAX_LEN }), check('owner').not().isEmpty()],
     createList
 );
 
-// update list card order
+// update list from list id
+router.patch(
+    '/:listId',
+    check('name').isLength({ min: 1, max: RULE.LST_MAX_LEN }),
+    updateListByListId
+);
+
+// update card order in list
 router.patch(
     '/update/card/order',
     [
-        check('srcListId').isMongoId(),
-        check('desListId').isMongoId(),
-        check('cardId').isMongoId(),
-        check('srcListOrder').isArray(),
-        check('desListOrder').isArray()
+        check(['srcId', 'desId', 'targetId']).not().isEmpty(),
+        check(['srcIdx', 'desIdx']).isNumeric()
     ],
     updateListCardOrder
 );
-
-// get all lists from board id
-router.get('/board/:boardId', getListsByBoardId);
-
-// get list from list id
-router.get('/:listId', getListByListId);
-
-// update list from list id
-router.patch('/:listId', [check('name').isLength({ min: 1, max: RULE.DEFAULT_MAX_LEN })], updateListByListId);
 
 // delete list from list id
 router.delete('/:listId', deleteListByListId);
