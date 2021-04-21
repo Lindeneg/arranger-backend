@@ -9,9 +9,11 @@
     "main": "./build/server.js",
     "license": "MIT",
     "scripts": {
+        "fix": "yarn run style:fix",
         "style": "yarn run style:format && yarn run style:lint",
         "style:lint": "yarn eslint ./src --cache --config ./.eslintrc.json",
         "style:format": "yarn prettier ./src --check --config ./.prettierrc",
+        "style:fix": "yarn prettier ./src --write --config ./.prettierrc",
         "build": "tsc",
         "dev": "NODE_ENV=development nodemon ./src/server.ts",
         "start": "NODE_ENV=production node ./build/server.js"

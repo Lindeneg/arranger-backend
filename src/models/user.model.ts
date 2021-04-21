@@ -2,7 +2,7 @@ import { Schema, Types, model } from 'mongoose';
 import uniqueValidator from 'mongoose-unique-validator';
 
 import { IBoard } from './board.model';
-import { BaseDoc, ModelName, ThemeOption } from '../util';
+import { BaseDoc, ModelName } from '../util';
 
 export interface IUser extends BaseDoc {
     username: string;

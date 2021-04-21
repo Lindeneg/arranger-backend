@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { TokenData } from './types';
 
 // create a new jwt token
-export const getToken = (pl: string | object): string | null => {
+export const getToken = (pl: string | Record<string, unknown>): string | null => {
     if (typeof process.env.JWT_PRIVATE_TOKEN !== 'undefined') {
         return jwt.sign(pl, process.env.JWT_PRIVATE_TOKEN, { expiresIn: '6h' });
     }
@@ -28,6 +28,7 @@ export const verifyToken = (token: string): TokenData | null => {
 };
 
 // compare userId found in jwt payload with the target string
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const cmp = (tokenData: TokenData | undefined, target: string | any): boolean => {
     if (
         typeof tokenData !== 'undefined' &&

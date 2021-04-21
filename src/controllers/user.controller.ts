@@ -93,7 +93,8 @@ export const loginUser: EMiddleware = async (req, res, next) => {
     }
 };
 
-export const deleteUser: EMiddleware = async (req, res, next) => { // TODO test
+export const deleteUser: EMiddleware = async (req, res, next) => {
+    // TODO test
     try {
         const foundUser: IUser | null = await User.findById(req.userData.userId);
         if (!foundUser) {
@@ -122,7 +123,8 @@ export const deleteUser: EMiddleware = async (req, res, next) => { // TODO test
     }
 };
 
-export const updateUser: EMiddleware = async (req, res, next) => { // TODO test
+export const updateUser: EMiddleware = async (req, res, next) => {
+    // TODO test
     const { theme, password }: SBody<string | null | undefined> = req.body;
     try {
         const user: IUser | null = await User.findById(req.userData.userId);

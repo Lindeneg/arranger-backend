@@ -53,6 +53,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // handle responses with errors or exceptions.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 app.use((error: HTTPException | any, req: Request, res: Response, next: NextFunction) => {
     if (res.headersSent) {
         next(error);
