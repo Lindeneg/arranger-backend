@@ -77,10 +77,14 @@ export const getUpdatedCardOrder = (
     return null;
 };
 
-export function validateBody(...args: Array<[string | undefined, number, number]>): boolean {
+export function validateBody(...args: Array<[string | undefined | null, number, number]>): boolean {
     for (let i = 0; i < args.length; i++) {
         const [target, min, max] = args[i];
-        if (typeof target !== 'undefined' && (target.length < min || target.length > max)) {
+        if (
+            typeof target !== 'undefined' &&
+            target !== null &&
+            (target.length < min || target.length > max)
+        ) {
             return false;
         }
     }

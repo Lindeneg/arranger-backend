@@ -13,7 +13,7 @@ router.post(
     [
         check('username').isLength({ min: RULE.USR_MIN_LEN, max: RULE.USR_MAX_LEN }),
         check('password').isLength({ min: RULE.PW_MIN_LEN, max: RULE.PW_MAX_LEN }),
-        check('theme').not().isEmpty()
+        check('theme').isLength({ min: 4, max: 5 })
     ],
     signupUser
 );

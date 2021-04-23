@@ -8,7 +8,7 @@ import Checklist from '../models/checklist.model';
 import Card from '../models/card.model';
 import List from '../models/list.model';
 import HTTPException from '../models/exception.model';
-import { getToken, EMiddleware, SBody } from '../util';
+import { RULE, getToken, EMiddleware, SBody, validateBody } from '../util';
 
 export const signupUser: EMiddleware = async (req, res, next) => {
     const errors: Result<ValidationError> = validationResult(req);
@@ -94,7 +94,6 @@ export const loginUser: EMiddleware = async (req, res, next) => {
 };
 
 export const deleteUser: EMiddleware = async (req, res, next) => {
-    // TODO test
     try {
         const foundUser: IUser | null = await User.findById(req.userData.userId);
         if (!foundUser) {
@@ -124,31 +123,54 @@ export const deleteUser: EMiddleware = async (req, res, next) => {
 };
 
 export const updateUser: EMiddleware = async (req, res, next) => {
-    // TODO test
-    const { theme, password }: SBody<string | null | undefined> = req.body;
-    try {
-        const user: IUser | null = await User.findById(req.userData.userId);
-        if (user) {
-            let didUpdate = false;
-            if (typeof theme !== 'undefined' && theme !== null) {
-                user.theme = theme;
-                didUpdate = true;
-            }
-            if (typeof password !== 'undefined' && password !== null) {
-                user.password = await bcrypt.hash(password, 12);
-                didUpdate = true;
-            }
-            if (didUpdate) {
-                user.updatedOn = new Date().getTime();
-                await user.save();
-                res.status(200).json({ theme: user.theme });
+    const { theme, password, username }: SBody<string | null | undefined> = req.body;
+    if (
+        !validateBody(
+            [theme, 4, 5],
+            [password, RULE.PW_MIN_LEN, RULE.PW_MAX_LEN],
+            [username, RULE.USR_MIN_LEN, RULE.USR_MAX_LEN]
+        )
+    ) {
+        next(HTTPException.rMalformed('malformed body'));
+    } else {
+        try {
+            const user: IUser | null = await User.findById(req.userData.userId);
+            if (user) {
+                let didUpdate = false;
+                if (typeof username !== 'undefined' && username !== null) {
+                    const existingUser: IUser | null = await User.findOne({ username });
+                    if (existingUser) {
+                        return next(
+                            new HTTPException(
+                                'The chosen username already exists. Please choose a different one.',
+                                422
+                            )
+                        );
+                    } else {
+                        user.username = username;
+                        didUpdate = true;
+                    }
+                }
+                if (typeof theme !== 'undefined' && theme !== null) {
+                    user.theme = theme;
+                    didUpdate = true;
+                }
+                if (typeof password !== 'undefined' && password !== null) {
+                    user.password = await bcrypt.hash(password, 12);
+                    didUpdate = true;
+                }
+                if (didUpdate) {
+                    user.updatedOn = new Date().getTime();
+                    await user.save();
+                    res.status(200).json({ theme: user.theme });
+                } else {
+                    next(HTTPException.rMalformed('no entries specified to update'));
+                }
             } else {
-                next(HTTPException.rMalformed('no entries specified to update'));
+                next(HTTPException.rNotFound('no user matches the requested id'));
             }
-        } else {
-            next(HTTPException.rNotFound('no user matches the requested id'));
+        } catch (err) {
+            next(HTTPException.rInternal(err));
         }
-    } catch (err) {
-        next(HTTPException.rInternal(err));
     }
 };
