@@ -3,9 +3,13 @@ export const RULE = {
     PW_MAX_LEN: 32,
     USR_MIN_LEN: 4,
     USR_MAX_LEN: 16,
-    DEFAULT_MAX_LEN: 32,
-    CHECKLIST_MAX_LEN: 64,
-    DES_MAX_LEN: 128
+    BRD_MAX_LEN: 16,
+    LST_MAX_LEN: 16,
+    CRD_NAME_MAX_LEN: 19,
+    CRD_DES_MAX_LEN: 512,
+    CHK_OBJ_MAX_LEN: 80,
+    COL_MIN_LEN: 3,
+    COL_MAX_LEN: 6
 };
 
 export const requiredEnvVars: string[] = [

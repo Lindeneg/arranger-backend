@@ -8,7 +8,7 @@ import Checklist from '../models/checklist.model';
 import Card from '../models/card.model';
 import List from '../models/list.model';
 import HTTPException from '../models/exception.model';
-import { getToken, EMiddleware, SBody } from '../util';
+import { RULE, getToken, EMiddleware, SBody, validateBody } from '../util';
 
 export const signupUser: EMiddleware = async (req, res, next) => {
     const errors: Result<ValidationError> = validationResult(req);
@@ -17,7 +17,7 @@ export const signupUser: EMiddleware = async (req, res, next) => {
         return next(HTTPException.rMalformed(errors));
     }
     // extract request data from body
-    const { username, password }: SBody = req.body;
+    const { username, password, theme }: SBody = req.body;
     try {
         const existingUser: IUser | null = await User.findOne({ username });
         // verify uniqueness of user
@@ -29,6 +29,7 @@ export const signupUser: EMiddleware = async (req, res, next) => {
             const newUser: IUser = new User({
                 username,
                 password: pwd,
+                theme,
                 boards: [],
                 createdOn: ts,
                 updatedOn: ts,
@@ -40,7 +41,9 @@ export const signupUser: EMiddleware = async (req, res, next) => {
             if (token) {
                 res.status(201).json({
                     token,
-                    _id: newUser._id
+                    userId: newUser._id,
+                    expires: Date.now() + 1000 * 60 * 60 * 6,
+                    theme: newUser.theme
                 });
             } else {
                 next(HTTPException.rInternal('jwt token could not be generated'));
@@ -76,7 +79,9 @@ export const loginUser: EMiddleware = async (req, res, next) => {
                 if (token) {
                     res.status(200).json({
                         token,
-                        _id: foundUser._id
+                        userId: foundUser._id,
+                        expires: Date.now() + 1000 * 60 * 60 * 6,
+                        theme: foundUser.theme
                     });
                 } else {
                     next(HTTPException.rInternal('jwt token could not be generated'));
@@ -109,33 +114,63 @@ export const deleteUser: EMiddleware = async (req, res, next) => {
             await foundUser.remove({ session });
             // commit all changes
             await session.commitTransaction();
-            // return deleted username with 200 response
-            res.status(200).json({ message: `user ${foundUser.username} successfully deleted` });
+            // return deleted userId with 200 response
+            res.status(200).json({ userId: foundUser._id });
         }
     } catch (err) {
         next(HTTPException.rInternal(err));
     }
 };
 
-export const changeUserPassword: EMiddleware = async (req, res, next) => {
-    const errors: Result<ValidationError> = validationResult(req);
-    // verify request body
-    if (!errors.isEmpty()) {
-        return next(HTTPException.rMalformed(errors));
-    }
-    // extract request data from body
-    const { password }: SBody = req.body;
-    try {
-        const user: IUser | null = await User.findById(req.userData.userId);
-        if (user) {
-            const ts: number = new Date().getTime();
-            const newPassword: string = await bcrypt.hash(password, 12);
-            await user.updateOne({ password: newPassword, updatedOn: ts });
-            res.status(200).json({ message: `user ${user.username} successfully deleted` });
-        } else {
-            next(HTTPException.rNotFound('no user matches the requested id'));
+export const updateUser: EMiddleware = async (req, res, next) => {
+    const { theme, password, username }: SBody<string | null | undefined> = req.body;
+    if (
+        !validateBody(
+            [theme, 4, 5],
+            [password, RULE.PW_MIN_LEN, RULE.PW_MAX_LEN],
+            [username, RULE.USR_MIN_LEN, RULE.USR_MAX_LEN]
+        )
+    ) {
+        next(HTTPException.rMalformed('malformed body'));
+    } else {
+        try {
+            const user: IUser | null = await User.findById(req.userData.userId);
+            if (user) {
+                let didUpdate = false;
+                if (typeof username !== 'undefined' && username !== null) {
+                    const existingUser: IUser | null = await User.findOne({ username });
+                    if (existingUser) {
+                        return next(
+                            new HTTPException(
+                                'The chosen username already exists. Please choose a different one.',
+                                422
+                            )
+                        );
+                    } else {
+                        user.username = username;
+                        didUpdate = true;
+                    }
+                }
+                if (typeof theme !== 'undefined' && theme !== null) {
+                    user.theme = theme;
+                    didUpdate = true;
+                }
+                if (typeof password !== 'undefined' && password !== null) {
+                    user.password = await bcrypt.hash(password, 12);
+                    didUpdate = true;
+                }
+                if (didUpdate) {
+                    user.updatedOn = new Date().getTime();
+                    await user.save();
+                    res.status(200).json({ theme: user.theme });
+                } else {
+                    next(HTTPException.rMalformed('no entries specified to update'));
+                }
+            } else {
+                next(HTTPException.rNotFound('no user matches the requested id'));
+            }
+        } catch (err) {
+            next(HTTPException.rInternal(err));
         }
-    } catch (err) {
-        next(HTTPException.rInternal(err));
     }
 };

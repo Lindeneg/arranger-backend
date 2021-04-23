@@ -7,7 +7,7 @@ import List, { IList } from '../models/list.model';
 import Card, { ICard } from '../models/card.model';
 import Checklist from '../models/checklist.model';
 import HTTPException from '../models/exception.model';
-import { EMiddleware, SBody, ModelName, CollectionName, cmp } from '../util';
+import { RULE, EMiddleware, SBody, ModelName, CollectionName, cmp, validateBody } from '../util';
 
 export const createBoard: EMiddleware = async (req, res, next) => {
     const errors: Result<ValidationError> = validationResult(req);
@@ -24,7 +24,7 @@ export const createBoard: EMiddleware = async (req, res, next) => {
             name,
             owner: req.userData.userId,
             lists: [],
-            order: [],
+            listOrder: [],
             createdOn: ts,
             updatedOn: ts
         });
@@ -75,14 +75,18 @@ export const getBoardByBoardId: EMiddleware = async (req, res, next) => {
     // extract request data from path
     const boardId: string = req.params.boardId;
     try {
-        // find the board and populate the list and list.card fields
+        // find the board and populate lists, lists.cards and lists.cards.checklists,
         // so only a single request have to be sent, to show an entire board
         const foundBoard: IBoard | null = await Board.findById(boardId).populate({
             path: CollectionName.List,
             model: ModelName.List,
             populate: {
                 path: CollectionName.Card,
-                model: ModelName.Card
+                model: ModelName.Card,
+                populate: {
+                    path: CollectionName.Checklist,
+                    model: ModelName.Checklist
+                }
             }
         });
         if (foundBoard) {
@@ -101,6 +105,43 @@ export const getBoardByBoardId: EMiddleware = async (req, res, next) => {
 };
 
 export const updateBoardByBoardId: EMiddleware = async (req, res, next) => {
+    // extract request data from path and body
+    const boardId: string = req.params.boardId;
+    const { color, name }: SBody = req.body;
+    try {
+        const updatedOn: number = new Date().getTime();
+        const foundBoard: IBoard | null = await Board.findById(boardId);
+        // verify requested board exists
+        if (!foundBoard) {
+            next(HTTPException.rNotFound());
+            // verify that the user has access to the board
+        } else if (cmp(req.userData, foundBoard.owner)) {
+            if (
+                !validateBody(
+                    [name, 1, RULE.BRD_MAX_LEN],
+                    [color, RULE.COL_MIN_LEN, RULE.COL_MAX_LEN]
+                )
+            ) {
+                next(HTTPException.rMalformed());
+            } else {
+                // update the board
+                foundBoard.color = color ? color : foundBoard.color;
+                foundBoard.name = name ? name : foundBoard.name;
+                foundBoard.updatedOn = updatedOn;
+                // save changes
+                await foundBoard.save();
+                // return updated board with a 200 response
+                res.status(200).json(foundBoard.toObject());
+            }
+        } else {
+            next(HTTPException.rAuth('incorrect token for desired action'));
+        }
+    } catch (err) {
+        next(HTTPException.rInternal(err));
+    }
+};
+
+export const updateBoardListOrderByBoardId: EMiddleware = async (req, res, next) => {
     const errors: Result<ValidationError> = validationResult(req);
     // verify request body
     if (!errors.isEmpty()) {
@@ -108,8 +149,7 @@ export const updateBoardByBoardId: EMiddleware = async (req, res, next) => {
     }
     // extract request data from path and body
     const boardId: string = req.params.boardId;
-    const { color, name }: SBody = req.body;
-    const { order }: SBody<string[]> = req.body;
+    const { srcIdx, desIdx }: SBody<number> = req.body;
     try {
         const updatedOn: number = new Date().getTime();
         const foundBoard: IBoard | null = await Board.findById(boardId);
@@ -119,10 +159,11 @@ export const updateBoardByBoardId: EMiddleware = async (req, res, next) => {
             // verify that the user has access to the board
         } else if (cmp(req.userData, foundBoard.owner)) {
             // update the board
-            foundBoard.color = color;
-            foundBoard.name = name;
+            const newOrder = [...foundBoard.listOrder];
+            const [src] = newOrder.splice(srcIdx, 1);
+            newOrder.splice(desIdx, 0, src);
+            foundBoard.listOrder = newOrder;
             foundBoard.updatedOn = updatedOn;
-            foundBoard.order = order;
             // save changes
             await foundBoard.save();
             // return updated board with a 200 response
@@ -159,10 +200,14 @@ export const deleteBoardByBoardId: EMiddleware = async (req, res, next) => {
                 { session }
             );
             // find all lists under the board
-            const foundLists: IList[] | null = await List.find({ owner: foundBoard._id }, null, { session });
+            const foundLists: IList[] | null = await List.find({ owner: foundBoard._id }, null, {
+                session
+            });
             // iterate over each found list
             foundLists.forEach(async (foundList: IList) => {
-                const foundCards: ICard[] | null = await Card.find({ owner: foundList._id }, null, { session });
+                const foundCards: ICard[] | null = await Card.find({ owner: foundList._id }, null, {
+                    session
+                });
                 // iterate over each found card
                 foundCards.forEach(async (foundCard: ICard) => {
                     // remove related checklists
@@ -205,7 +250,7 @@ export const deleteBoardByBoardId: EMiddleware = async (req, res, next) => {
             // commit changes
             await session.commitTransaction();
             // return the deleted board with a 200 response
-            res.status(200).json({ message: `board ${foundBoard.name} successfully deleted` });
+            res.status(200).json(foundBoard.toObject());
         } else {
             next(HTTPException.rAuth('incorrect token for desired action'));
         }

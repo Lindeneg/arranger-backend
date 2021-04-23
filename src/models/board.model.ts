@@ -2,12 +2,13 @@ import { Schema, Types, model } from 'mongoose';
 
 import { IUser } from './user.model';
 import { IList } from './list.model';
-import { BaseDoc, ModelName, Orderable } from '../util/types';
+import { BaseDoc, ModelName } from '../util/types';
 
-export interface IBoard extends BaseDoc, Orderable {
-    color: string;
+export interface IBoard extends BaseDoc {
     owner: IUser['_id'];
+    color: string;
     lists: Array<IList['_id']>;
+    listOrder: string[];
 }
 
 const boardSchema: Schema = new Schema({
@@ -15,7 +16,7 @@ const boardSchema: Schema = new Schema({
     name: { type: String, required: true },
     owner: { type: Types.ObjectId, required: true, ref: ModelName.User },
     lists: { type: [Types.ObjectId], required: true, ref: ModelName.List },
-    order: { type: [String], required: true },
+    listOrder: { type: [String], required: true },
     createdOn: { type: Number, required: true },
     updatedOn: { type: Number, required: true }
 });

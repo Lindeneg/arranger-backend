@@ -6,7 +6,7 @@ import List, { IList } from '../models/list.model';
 import Card, { ICard } from '../models/card.model';
 import Checklist from '../models/checklist.model';
 import HTTPException from '../models/exception.model';
-import { EMiddleware, SBody, ModelName, CollectionName, cmp } from '../util';
+import { EMiddleware, SBody, CollectionName, OrderName, cmp, getUpdatedCardOrder } from '../util';
 
 export const createList: EMiddleware = async (req, res, next) => {
     const errors: Result<ValidationError> = validationResult(req);
@@ -27,14 +27,14 @@ export const createList: EMiddleware = async (req, res, next) => {
                     name,
                     owner: owningBoard._id,
                     cards: [],
-                    order: [],
+                    cardOrder: [],
                     indirectOwner: req.userData.userId,
                     createdOn: ts,
                     updatedOn: ts
                 });
                 // add list to owning board
                 owningBoard[CollectionName.List].push(newList._id);
-                owningBoard[CollectionName.Order].push(newList._id);
+                owningBoard[OrderName.List].push(newList._id);
                 // update owning board updatedOn
                 owningBoard.updatedOn = ts;
                 // start transaction and attempt to save changes
@@ -57,59 +57,6 @@ export const createList: EMiddleware = async (req, res, next) => {
     }
 };
 
-export const getListsByBoardId: EMiddleware = async (req, res, next) => {
-    // extract request data from path
-    const boardId: string = req.params.boardId;
-    try {
-        const foundBoard: IBoard | null = await Board.findById(boardId);
-        // verify that the owning board exists
-        if (foundBoard) {
-            // verify that the user has access to the board and therefore the lists under said board
-            if (cmp(req.userData, foundBoard.owner)) {
-                const foundLists: IList[] | null = await List.find({ owner: foundBoard._id });
-                if (foundLists) {
-                    res.status(200).json(foundLists.map((list) => list.toObject()));
-                } else {
-                    next(HTTPException.rNotFound('no lists could be extracted from board'));
-                }
-            } else {
-                next(HTTPException.rAuth('owner does not match authenticated user'));
-            }
-        } else {
-            next(HTTPException.rNotFound('owning board could not be found'));
-        }
-    } catch (err) {
-        next(HTTPException.rInternal(err));
-    }
-};
-
-export const getListByListId: EMiddleware = async (req, res, next) => {
-    // extract request data from path
-    const listId: string = req.params.listId;
-    try {
-        // find the list and populate the card and checklist models
-        const foundList: IList | null = await List.findById(listId).populate({
-            path: CollectionName.Card,
-            model: ModelName.Card,
-            populate: {
-                path: CollectionName.Checklist,
-                model: ModelName.Checklist
-            }
-        });
-        if (foundList) {
-            if (cmp(req.userData, foundList.indirectOwner)) {
-                res.status(200).json(foundList.toObject());
-            } else {
-                next(HTTPException.rAuth('owner does not match authenticated user'));
-            }
-        } else {
-            next(HTTPException.rNotFound('listId does not match any existing list'));
-        }
-    } catch (err) {
-        next(HTTPException.rInternal(err));
-    }
-};
-
 export const updateListByListId: EMiddleware = async (req, res, next) => {
     const errors: Result<ValidationError> = validationResult(req);
     // verify request body
@@ -125,6 +72,7 @@ export const updateListByListId: EMiddleware = async (req, res, next) => {
         // verify that the requested list exists
         if (!foundList) {
             next(HTTPException.rNotFound());
+            // verify user has access to list
         } else if (cmp(req.userData, foundList.indirectOwner)) {
             // perform updates to the list
             foundList.name = name;
@@ -146,33 +94,45 @@ export const updateListCardOrder: EMiddleware = async (req, res, next) => {
         return next(HTTPException.rMalformed(errors));
     }
     // extract request data from body
-    const { srcListId, desListId, cardId }: SBody = req.body;
-    const { srcListOrder, desListOrder }: SBody<string[]> = req.body;
+    const { srcId, desId, targetId }: SBody = req.body;
+    const { srcIdx, desIdx }: SBody<number> = req.body;
     try {
         const updatedOn: number = new Date().getTime();
-        const srcList: IList | null = await List.findById(srcListId);
+        const srcList: IList | null = await List.findById(srcId);
+        const desList: IList | null = await List.findById(desId);
         // verify source exists
-        if (srcList) {
+        if (srcList && desList) {
             // verify user has access to source
             if (!cmp(req.userData, srcList.indirectOwner)) {
                 return next(HTTPException.rAuth('src list is inaccessible'));
             }
-            const session: ClientSession = await startSession();
-            session.startTransaction();
-            // the source list should always have its card order updated
-            await srcList.updateOne({ order: srcListOrder, updatedOn }, { session });
-            // if the source and destination lists are not equal
-            // we need to update the destination as well
-            if (srcListId !== desListId) {
-                const desList: IList | null = await List.findById(desListId, null, { session });
-                // verify destination exists
-                if (desList) {
+            const newOrders = getUpdatedCardOrder(
+                targetId,
+                srcId,
+                srcIdx,
+                srcList.cardOrder,
+                desId,
+                desIdx,
+                desList.cardOrder
+            );
+            if (newOrders !== null) {
+                const session: ClientSession = await startSession();
+                session.startTransaction();
+                // the source list should always have its card order updated
+                await srcList.updateOne(
+                    { [OrderName.Card]: newOrders.srcOrder, updatedOn },
+                    { session }
+                );
+                // if the source and destination lists are not equal
+                // we need to update the destination as well
+                if (srcId !== desId) {
+                    // verify destination exists
                     // verify user has access to destination
                     if (!cmp(req.userData, desList.indirectOwner)) {
                         return next(HTTPException.rAuth('des list is inaccessible'));
                     }
                     // a card must have changed owner when the source and destination are not equal
-                    const card: ICard | null = await Card.findById(cardId, null, { session });
+                    const card: ICard | null = await Card.findById(targetId, null, { session });
                     // verify card exists
                     if (card) {
                         // verify user has access to card
@@ -180,12 +140,15 @@ export const updateListCardOrder: EMiddleware = async (req, res, next) => {
                             return next(HTTPException.rAuth('card is inaccessible'));
                         }
                         // pull the card from the source list
-                        await srcList.updateOne({ $pull: { [CollectionName.Card]: cardId } }, { session });
+                        await srcList.updateOne(
+                            { $pull: { [CollectionName.Card]: targetId } },
+                            { session }
+                        );
                         // add the card to the destination list and update the card order
                         await desList.updateOne(
                             {
-                                $push: { [CollectionName.Card]: cardId },
-                                order: desListOrder,
+                                $push: { [CollectionName.Card]: targetId },
+                                [OrderName.Card]: newOrders.desOrder,
                                 updatedOn
                             },
                             { session }
@@ -195,15 +158,15 @@ export const updateListCardOrder: EMiddleware = async (req, res, next) => {
                     } else {
                         return next(HTTPException.rNotFound('card not found'));
                     }
-                } else {
-                    return next(HTTPException.rNotFound('des list not found'));
                 }
+                // commit the changes
+                await session.commitTransaction();
+                res.status(201).json({ message: 'order updated' });
+            } else {
+                next(HTTPException.rMalformed('could not get updated order'));
             }
-            // commit the changes
-            await session.commitTransaction();
-            res.status(201).json({ message: 'entries successfully updated' });
         } else {
-            next(HTTPException.rNotFound('src list not found'));
+            next(HTTPException.rNotFound('list not found'));
         }
     } catch (err) {
         next(HTTPException.rInternal(err));
@@ -227,11 +190,19 @@ export const deleteListByListId: EMiddleware = async (req, res, next) => {
             // remove list reference from board
             await Board.findByIdAndUpdate(
                 foundList.owner,
-                { $pull: { [CollectionName.List]: foundList._id, [CollectionName.Order]: foundList._id }, updatedOn },
+                {
+                    $pull: {
+                        [CollectionName.List]: foundList._id,
+                        [OrderName.List]: foundList._id
+                    },
+                    updatedOn
+                },
                 { session }
             );
             // find all cards under the list
-            const foundCards: ICard[] | null = await Card.find({ owner: foundList._id }, null, { session });
+            const foundCards: ICard[] | null = await Card.find({ owner: foundList._id }, null, {
+                session
+            });
             // iterate over each found card
             foundCards.forEach(async (foundCard: ICard) => {
                 // remove related checklists under iterated card
@@ -262,7 +233,7 @@ export const deleteListByListId: EMiddleware = async (req, res, next) => {
             // commit changes
             await session.commitTransaction();
             // return name of deleted list with a 200 response
-            res.status(200).json({ message: `list ${foundList.name} successfully deleted` });
+            res.status(200).json(foundList.toObject());
         } else {
             next(HTTPException.rAuth('incorrect token for desired action'));
         }

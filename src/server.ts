@@ -32,7 +32,10 @@ app.use(bodyParserJSON());
 // expected request origin, headers and methods.
 app.use((req: Request, res: Response, next: NextFunction) => {
     res.setHeader('Access-Control-Allow-Origin', process.env.WHITELISTED_DOMAIN || '*');
-    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Origin, X-Requested-With, Content-Type, Accept, Authorization'
+    );
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE');
     next();
 });
@@ -50,13 +53,18 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // handle responses with errors or exceptions.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 app.use((error: HTTPException | any, req: Request, res: Response, next: NextFunction) => {
     if (res.headersSent) {
         next(error);
     } else {
         const fallBack: string = isDebug() ? error : 'Something went wrong. Please try again.';
         res.status(error.statusCode || 500).json(
-            error instanceof HTTPException ? error.toResponse() : error instanceof Error ? error.message : fallBack
+            error instanceof HTTPException
+                ? error.toResponse()
+                : error instanceof Error
+                ? error.message
+                : fallBack
         );
     }
 });
@@ -65,9 +73,11 @@ app.use((error: HTTPException | any, req: Request, res: Response, next: NextFunc
 console.log('connecting to mongodb...');
 // https://mongoosejs.com/docs/deprecations.html
 connect(
-    `mongodb+srv://${process.env.MONGO_DB_USER}:${encodeURIComponent(process.env.MONGO_DB_KEY || '')}@${
-        process.env.MONGO_DB_CLUSTER
-    }.mongodb.net/${process.env.MONGO_DB_NAME}?retryWrites=true&w=majority`,
+    `mongodb+srv://${process.env.MONGO_DB_USER}:${encodeURIComponent(
+        process.env.MONGO_DB_KEY || ''
+    )}@${process.env.MONGO_DB_CLUSTER}.mongodb.net/${
+        process.env.MONGO_DB_NAME
+    }?retryWrites=true&w=majority`,
     {
         useNewUrlParser: true,
         useUnifiedTopology: true,

@@ -6,6 +6,7 @@ import {
     getBoardsByUserId,
     getBoardByBoardId,
     updateBoardByBoardId,
+    updateBoardListOrderByBoardId,
     deleteBoardByBoardId
 } from '../controllers/board.controller';
 import { authCheck } from '../middleware/auth.middleware';
@@ -20,8 +21,8 @@ router.use(authCheck);
 router.post(
     '/',
     [
-        check('color').isLength({ min: 1, max: RULE.DEFAULT_MAX_LEN }),
-        check('name').isLength({ min: 1, max: RULE.DEFAULT_MAX_LEN })
+        check('color').isLength({ min: RULE.COL_MIN_LEN, max: RULE.COL_MAX_LEN }),
+        check('name').isLength({ min: 1, max: RULE.BRD_MAX_LEN })
     ],
     createBoard
 );
@@ -33,14 +34,13 @@ router.get('/user/:userId', getBoardsByUserId);
 router.get('/:boardId', getBoardByBoardId);
 
 // update board from board id
+router.patch('/:boardId', updateBoardByBoardId);
+
+// update board list order from board id
 router.patch(
-    '/:boardId',
-    [
-        check('color').isLength({ min: 1, max: RULE.DEFAULT_MAX_LEN }),
-        check('name').isLength({ min: 1, max: RULE.DEFAULT_MAX_LEN }),
-        check('order').isArray()
-    ],
-    updateBoardByBoardId
+    '/:boardId/update/list/order',
+    [check('srcIdx').isNumeric(), check('desIdx').isNumeric()],
+    updateBoardListOrderByBoardId
 );
 
 // delete board from board id
