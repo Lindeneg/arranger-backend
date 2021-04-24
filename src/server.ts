@@ -29,16 +29,8 @@ const app: Express = express();
 // json.. whats not to like
 app.use(bodyParserJSON());
 
-// expected request origin, headers and methods.
-app.use((req: Request, res: Response, next: NextFunction) => {
-    res.setHeader('Access-Control-Allow-Origin', process.env.WHITELISTED_DOMAIN || '*');
-    res.setHeader(
-        'Access-Control-Allow-Headers',
-        'Origin, X-Requested-With, Content-Type, Accept, Authorization'
-    );
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE');
-    next();
-});
+// serve public static files
+app.use(express.static(path.join('public')));
 
 // available API routes
 app.use('/api/user', userRouter);
@@ -47,9 +39,9 @@ app.use('/api/lists', listRouter);
 app.use('/api/cards', cardRouter);
 app.use('/api/checklists', checklistRouter);
 
-// if no routes are met, then respond with a 404
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((req: Request, res: Response, next: NextFunction) => {
-    next(HTTPException.rNotFound());
+    res.sendFile(path.resolve('public', 'index.html'));
 });
 
 // handle responses with errors or exceptions.

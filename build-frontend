@@ -1,0 +1,6 @@
+#!/bin/bash
+
+yarn build
+rm -rf ./public/*
+cd ../arranger-frontend && yarn build
+cp -r ./build/* ../arranger-backend/public/

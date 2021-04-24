@@ -15,6 +15,7 @@
         "style:format": "yarn prettier ./src --check --config ./.prettierrc",
         "style:fix": "yarn prettier ./src --write --config ./.prettierrc",
         "build": "tsc",
+        "build:front": "./build-frontend",
         "dev": "NODE_ENV=development nodemon ./src/server.ts",
         "start": "NODE_ENV=production node ./build/server.js"
     },
