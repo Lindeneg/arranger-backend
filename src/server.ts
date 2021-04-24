@@ -1,6 +1,7 @@
 import path from 'path';
 
 import express, { Express, Request, Response, NextFunction } from 'express';
+import favicon from 'serve-favicon';
 import { connect } from 'mongoose';
 import { json as bodyParserJSON } from 'body-parser';
 import { config } from 'dotenv';
@@ -31,6 +32,7 @@ app.use(bodyParserJSON());
 
 // serve public static files
 app.use(express.static(path.join('public')));
+app.use(favicon(path.join(__dirname, '../public', 'favicon.ico')));
 
 // available API routes
 app.use('/api/user', userRouter);
